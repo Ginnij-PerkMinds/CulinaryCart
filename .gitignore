@@ -1,0 +1,38 @@
+# Visual Studio cache and settings
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+bin/
+obj/
+Debug/
+Release/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# Log files
+*.log
+
+# Auto-generated files
+*.dbmdl
+*.bak
+*.tmp
+*.temp
+*.cache
+
+# Entity Framework migrations snapshot
+Migrations/
+
+# NuGet packages
+*.nupkg
+packages/
+*.snupkg
+
+# Others
+*.swp
+*.lock.json
