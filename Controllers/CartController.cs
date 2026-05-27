@@ -1,4 +1,5 @@
-﻿using CulinaryCart.CulinaryBAl;
+﻿using CulinaryCart.Constants;
+using CulinaryCart.CulinaryBAl;
 using CulinaryCart.CulinaryDal;
 using CulinaryCart.Model;   
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +18,6 @@ namespace CulinaryCart.Controllers
             _cartBal = cartBal;
             _menuDal = menuDal;
         }
-
-        [HttpGet("menu")]
-        public IActionResult GetMenu() => Ok(_menuDal.GetAllMenuItems());
 
         [HttpPost("add")]
         public IActionResult AddToCart(int foodItemId, int qty)
@@ -58,13 +56,20 @@ namespace CulinaryCart.Controllers
             return Ok(CulinaryCartConstants.Messages.ItemRemoved);
         }
 
-        [HttpPost("checkout")]
-        public IActionResult Checkout()
+        [HttpGet]
+        [Route("ViewCart")]
+        public IActionResult ViewCart()
         {
-            
-            _cartBal.Checkout();
-            return Ok(new { Message = CulinaryCartConstants.Messages.OrderPlaced});
+            var items = _cartBal.GetCartItems();
+
+            if (items == null || !items.Any())
+            {
+                return Ok(new { Message = "Cart is empty" });
+            }
+
+            return Ok(items);
         }
+
     }
 
 }

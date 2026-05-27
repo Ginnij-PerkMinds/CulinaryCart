@@ -1,4 +1,4 @@
-﻿namespace CulinaryCart.Controllers
+﻿namespace CulinaryCart.Constants
 {
     public static class CulinaryCartConstants
     {

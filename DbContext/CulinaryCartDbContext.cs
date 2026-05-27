@@ -8,5 +8,35 @@ public class CulinaryCartDbContext : DbContext
 
     public DbSet<Menu> Menu { get; set; }
     public DbSet<OrderHistory> OrderHistory { get; set; }
+    public DbSet<Category> Category { get; set; }       
+    public DbSet<DietaryPreference> DietaryPreference { get; set; }  
+    public DbSet<CartItem> CartItems { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Category>().ToTable("Categories");          
+        modelBuilder.Entity<DietaryPreference>().ToTable("DietaryPreference"); 
+        modelBuilder.Entity<Menu>().ToTable("Menu");
+        modelBuilder.Entity<OrderHistory>().ToTable("OrderHistory");
+        modelBuilder.Entity<CartItem>().ToTable("CartItems");
+
+        // Defining primary keys:
+        modelBuilder.Entity<Category>().HasKey(c => c.CategoryId);          
+        modelBuilder.Entity<DietaryPreference>().HasKey(d => d.DietId);       
+        modelBuilder.Entity<Menu>().HasKey(m => m.FoodItemID);                  
+        modelBuilder.Entity<OrderHistory>().HasKey(o => o.HistoryID);          
+        modelBuilder.Entity<CartItem>().HasKey(c => c.CartItemId);
+
+        // Relationships
+        modelBuilder.Entity<Menu>()
+            .HasOne(m => m.Category)
+            .WithMany(c => c.MenuItems)
+            .HasForeignKey(m => m.CategoryId);                                  
+
+        modelBuilder.Entity<Menu>()
+            .HasOne(m => m.DietaryPreference)
+            .WithMany(d => d.MenuItems)
+            .HasForeignKey(m => m.DietId);                                     
+    }
 }
 
