@@ -6,5 +6,7 @@
     public string ImageUrl { get; set; }              // optional new image
     public string CategoryName { get; set; }          // optional new category
     public string DietaryPreferenceName { get; set; } // optional new diet preference
+
+    public IFormFile? ImageFile { get; set; }
 }
 

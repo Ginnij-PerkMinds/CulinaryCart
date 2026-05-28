@@ -15,25 +15,25 @@ namespace CulinaryCart.CulinaryDal
             _db = db;
         }
 
-        // ✅ Get all dietary preferences
+        // Get all dietary preferences
         public List<DietaryPreference> GetAllDietPreferences()
         {
             return _db.DietaryPreference.ToList();
         }
 
-        // ✅ Get diet by ID
+        // Get diet by ID
         public DietaryPreference? GetById(int id)
         {
             return _db.DietaryPreference.FirstOrDefault(d => d.DietId == id);
         }
 
-        // ✅ Get diet by name
+        // Get diet by name
         public DietaryPreference? GetByName(string name)
         {
             return _db.DietaryPreference.FirstOrDefault(d => d.Diet == name);
         }
 
-        // ✅ Add new diet preference
+        // Add new diet preference
         public DietaryPreference AddDietPreference(DietaryPreference diet)
         {
             _db.DietaryPreference.Add(diet);
@@ -41,7 +41,7 @@ namespace CulinaryCart.CulinaryDal
             return diet;
         }
 
-        // ✅ Update diet preference
+        // Update diet preference
         public bool UpdateDietPreference(int id, DietaryPreference diet)
         {
             var existing = _db.DietaryPreference.Find(id);
@@ -52,7 +52,7 @@ namespace CulinaryCart.CulinaryDal
             return true;
         }
 
-        // ✅ Delete diet preference
+        // Delete diet preference
         public bool DeleteDietPreference(int id)
         {
             var existing = _db.DietaryPreference.Find(id);
