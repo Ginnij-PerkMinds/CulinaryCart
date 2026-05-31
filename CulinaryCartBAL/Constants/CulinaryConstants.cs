@@ -1,4 +1,4 @@
-﻿namespace CulinaryCart.Constants
+﻿namespace CulinaryCart.CulinaryCartBAL.Constants
 {
     public static class CulinaryCartConstants
     {

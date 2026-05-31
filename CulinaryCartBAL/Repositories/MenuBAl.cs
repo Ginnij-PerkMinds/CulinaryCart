@@ -1,9 +1,10 @@
-﻿using CulinaryCart.CulinaryDal;
-using CulinaryCart.Model;
-using System.Collections.Generic;
-using CulinaryCart.CulinaryFAL;    //added for image handling
+﻿using System.Collections.Generic;
+using CulinaryCart.CulinaryFAL;
+using CulinaryCart.CulinaryCartDAL.Repositories;
+using CulinaryCart.CulinaryCartBAL.Models.DTO;
+using CulinaryCart.CulinaryCartDAL.Models;
 
-namespace CulinaryCart.CulinaryBAL
+namespace CulinaryCart.CulinaryCartBAL.Repositories
 {
     public class MenuBAL
     {

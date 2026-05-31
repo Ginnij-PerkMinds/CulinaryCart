@@ -1,4 +1,4 @@
-﻿namespace CulinaryCart.Model   // ✅ same namespace as your other models
+﻿namespace CulinaryCart.CulinaryCartBAL.Models.DTO   
 {
     public class MenuRequest
     {

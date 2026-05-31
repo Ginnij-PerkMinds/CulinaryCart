@@ -1,6 +1,6 @@
-﻿using CulinaryCart.CulinaryDal;
+﻿using CulinaryCart.CulinaryCartDAL.Repositories;
 using CulinaryCart.CulinaryFAL;
-using CulinaryCart.Model;
+using CulinaryCart.CulinaryCartDAL.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -54,6 +54,7 @@ namespace CulinaryCart.Controllers
         //    return Ok(new { Message = "Menu item added successfully", Item = added });
         //}
 
+
         // Get Categories
         [HttpGet("GetCategories")]
         public IActionResult GetCategories()
@@ -69,6 +70,7 @@ namespace CulinaryCart.Controllers
             var diets = _dietDal.GetAllDietPreferences();
             return Ok(diets);
         }
+
         // Add new menu item
         [HttpPost("AddMenu")]
         [Consumes("multipart/form-data")]
@@ -122,6 +124,7 @@ namespace CulinaryCart.Controllers
         //        return BadRequest(ex.Message);
         //    }
         //}
+
 
         // Update existing menu item
         [HttpPut("UpdateMenu/{id}")]

@@ -1,4 +1,4 @@
-﻿using CulinaryCart.CulinaryBAl;
+﻿using CulinaryCart.CulinaryCartBAL.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CulinaryCart.Controllers

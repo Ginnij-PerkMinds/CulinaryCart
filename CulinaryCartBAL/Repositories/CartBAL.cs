@@ -1,11 +1,11 @@
-﻿using CulinaryCart.Constants;
-using CulinaryCart.CulinaryDal;
-using CulinaryCart.Model;
+﻿using CulinaryCart.CulinaryCartBAL.Constants;
+using CulinaryCart.CulinaryCartDAL.Models;
+using CulinaryCart.CulinaryCartDAL.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CulinaryCart.CulinaryBAl
+namespace CulinaryCart.CulinaryCartBAL.Repositories
 {
     public class CartBAL
     {

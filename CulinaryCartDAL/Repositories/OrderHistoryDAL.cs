@@ -1,7 +1,7 @@
-﻿using CulinaryCart.DbContext;
-using CulinaryCart.Model;
+﻿using CulinaryCart.CulinaryCartDAL.DbContext;
+using CulinaryCart.CulinaryCartDAL.Models;
 
-namespace CulinaryCart.CulinaryDal
+namespace CulinaryCart.CulinaryCartDAL.Repositories
 {
     public class OrderHistoryDAL
     {

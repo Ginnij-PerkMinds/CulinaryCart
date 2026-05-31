@@ -1,9 +1,9 @@
-﻿using CulinaryCart.DbContext;
-using CulinaryCart.Model;
+﻿using CulinaryCart.CulinaryCartDAL.DbContext;
+using CulinaryCart.CulinaryCartDAL.Models;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace CulinaryCart.CulinaryDal
+namespace CulinaryCart.CulinaryCartDAL.Repositories
 {
     public class CartDAL
     {

@@ -1,4 +1,4 @@
-﻿namespace CulinaryCart.Model
+﻿namespace CulinaryCart.CulinaryCartDAL.Models
 {
 public class DietaryPreference
     {

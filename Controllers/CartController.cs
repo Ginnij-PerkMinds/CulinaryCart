@@ -1,7 +1,7 @@
-﻿using CulinaryCart.Constants;
-using CulinaryCart.CulinaryBAl;
-using CulinaryCart.CulinaryDal;
-using CulinaryCart.Model;   
+﻿using CulinaryCart.CulinaryCartBAL.Constants;
+using CulinaryCart.CulinaryCartBAL.Repositories;
+using CulinaryCart.CulinaryCartDAL.Repositories;
+using CulinaryCart.CulinaryCartDAL.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CulinaryCart.Controllers

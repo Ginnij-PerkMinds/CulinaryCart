@@ -1,5 +1,6 @@
-﻿namespace CulinaryCart.DbContext;
-using CulinaryCart.Model;
+﻿namespace CulinaryCart.CulinaryCartDAL.DbContext;
+
+using CulinaryCart.CulinaryCartDAL.Models;
 using Microsoft.EntityFrameworkCore;
 
 public class CulinaryCartDbContext : DbContext

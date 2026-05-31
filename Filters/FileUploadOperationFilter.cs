@@ -1,7 +1,7 @@
-﻿using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.SwaggerGen;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.OpenApi; 
+using Swashbuckle.AspNetCore.SwaggerGen;    
 using System.Linq;
-using System.Collections.Generic;   
 
 namespace CulinaryCart.Filters
 {
@@ -9,22 +9,11 @@ namespace CulinaryCart.Filters
     {
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
-            var fileParams = context.ApiDescription.ParameterDescriptions
-                .Where(p => p.Type == typeof(Microsoft.AspNetCore.Http.IFormFile));
+            var fileUploadParams = context.ApiDescription.ParameterDescriptions
+                .Where(p => p.Type == typeof(IFormFile));
 
-            if (fileParams.Any())
+            if (fileUploadParams.Any())
             {
-                var properties = new Dictionary<string, IOpenApiSchema>();
-
-                foreach (var p in fileParams)
-                {
-                    properties[p.Name] = new OpenApiSchema
-                    {
-                        Type = Microsoft.OpenApi.JsonSchemaType.String, 
-                        Format = "binary"
-                    };
-                }
-
                 operation.RequestBody = new OpenApiRequestBody
                 {
                     Content =
@@ -33,9 +22,15 @@ namespace CulinaryCart.Filters
                         {
                             Schema = new OpenApiSchema
                             {
-                                Type = Microsoft.OpenApi.JsonSchemaType.Object, 
-                                Properties = properties,   
-                                Required = fileParams.Select(p => p.Name).ToHashSet()
+                                Type = Microsoft.OpenApi.JsonSchemaType.Object,
+                                Properties =
+                                {
+                                    ["file"] = new OpenApiSchema
+                                    {
+                                        Type = Microsoft.OpenApi.JsonSchemaType.String,
+                                        Format = "binary"
+                                    }
+                                }
                             }
                         }
                     }
@@ -44,4 +39,3 @@ namespace CulinaryCart.Filters
         }
     }
 }
-
