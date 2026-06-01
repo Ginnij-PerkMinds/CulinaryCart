@@ -36,7 +36,15 @@ namespace CulinaryCart.Controllers
             if (!string.IsNullOrEmpty(filter.DietaryPreferenceName))
                 items = items.Where(m => m.DietaryPreference?.Diet == filter.DietaryPreferenceName).ToList();
 
-            var response = items.Select(m => new MenuResponse
+            //pagination
+            var totalCount = items.Count;
+            var pagedItems = items
+                .Skip((filter.PageNumber - 1) * filter.PageSize)
+                .Take(filter.PageSize)
+                .ToList();
+
+            //var response = items.Select(m => new MenuResponse
+            var response = pagedItems.Select(m => new MenuResponse
             {
                 FoodItemID = m.FoodItemID,
                 FoodItemName = m.FoodItemName,
@@ -50,7 +58,14 @@ namespace CulinaryCart.Controllers
             if (!response.Any())
                 return Ok(new { Message = "No menu items available" });
 
-            return Ok(response);
+            return Ok(new
+            {
+                TotalFoodItems = totalCount,
+                PageNumber = filter.PageNumber,
+                PageSize = filter.PageSize,
+                Data = response
+            }
+                );
         }
 
 

@@ -43,6 +43,8 @@ internal class Program
             c.OperationFilter<ShowMenuOperationFilter>();
 
             c.OperationFilter<FormDataOperationFilter>();
+
+            c.OperationFilter<ShowMenuPaginationOperationFilter>();
         });
 
         builder.Services.AddDbContext<CulinaryCartDbContext>(options =>
