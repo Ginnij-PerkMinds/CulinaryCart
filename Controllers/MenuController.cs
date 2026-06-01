@@ -3,6 +3,7 @@ using CulinaryCart.CulinaryFAL;
 using CulinaryCart.CulinaryCartDAL.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using CulinaryCart.CulinaryCartBAL.Models.DTO;
 
 namespace CulinaryCart.Controllers
 {
@@ -15,91 +16,91 @@ namespace CulinaryCart.Controllers
         private readonly DietDAL _dietDal;
         private readonly ImageFAL _imageFal;
 
-        public MenuController(MenuDAL menuDal, CategoryDAL categoryDal, DietDAL dietDal, ImageFAL imageFal)
+        public MenuController(MenuDAL menuDal, CategoryDAL categoryDal, DietDAL dietDal, IImageFAL imageFal)
         {
             _menuDal = menuDal;
             _categoryDal = categoryDal;
             _dietDal = dietDal;
-            _imageFal = imageFal;
+            _imageFal = (ImageFAL?)imageFal;
         }
 
-        // Show all menu items
+
         [HttpGet("ShowMenu")]
-        public IActionResult ShowMenu()
+        public IActionResult ShowMenu([FromQuery] ShowMenuFilterRequest filter) 
         {
-            var items = _menuDal.GetAllMenuItems()
-           .Select(m => new MenuResponse
-        {
-            FoodItemID = m.FoodItemID,
-            FoodItemName = m.FoodItemName,
-            Price = m.Price,
-            Offers = m.Offers,
-            ImageUrl = m.ImageUrl,
-            CategoryName = m.Category?.CategoryName,
-            DietaryPreferenceName = m.DietaryPreference?.Diet
-        })
-        .ToList();
-            if (!items.Any())
+            var items = _menuDal.GetAllMenuItems();
+
+            if (!string.IsNullOrEmpty(filter.CategoryName))
+                items = items.Where(m => m.Category?.CategoryName == filter.CategoryName).ToList();
+
+            if (!string.IsNullOrEmpty(filter.DietaryPreferenceName))
+                items = items.Where(m => m.DietaryPreference?.Diet == filter.DietaryPreferenceName).ToList();
+
+            var response = items.Select(m => new MenuResponse
+            {
+                FoodItemID = m.FoodItemID,
+                FoodItemName = m.FoodItemName,
+                Price = m.Price,
+                Offers = m.Offers,
+                ImageUrl = m.ImageUrl,
+                CategoryName = m.Category?.CategoryName,
+                DietaryPreferenceName = m.DietaryPreference?.Diet})
+                .ToList();
+
+            if (!response.Any())
                 return Ok(new { Message = "No menu items available" });
 
-            return Ok(items);
+            return Ok(response);
         }
 
 
 
-        //[HttpPost("AddMenu")]
-        //public IActionResult AddMenu([FromForm] MenuRequest request)
+        //// Get Categories
+        //[HttpGet("GetCategories")]
+        //public IActionResult GetCategories()
         //{
-        //    var added = _menuDal.AddItem(menu);
-        //    return Ok(new { Message = "Menu item added successfully", Item = added });
+        //    var categories = _categoryDal.GetAllCategories();
+        //    return Ok(categories);
         //}
 
+        //// Get DietaryPreferences
+        //[HttpGet("GetDietaryPreferences")]
+        //public IActionResult GetDietaryPreferences()
+        //{
+        //    var diets = _dietDal.GetAllDietPreferences();
+        //    return Ok(diets);
+        //}
 
-        // Get Categories
-        [HttpGet("GetCategories")]
-        public IActionResult GetCategories()
-        {
-            var categories = _categoryDal.GetAllCategories();
-            return Ok(categories);
-        }
-
-        // Get DietaryPreferences
-        [HttpGet("GetDietaryPreferences")]
-        public IActionResult GetDietaryPreferences()
-        {
-            var diets = _dietDal.GetAllDietPreferences();
-            return Ok(diets);
-        }
-
+     
         // Add new menu item
         [HttpPost("AddMenu")]
         [Consumes("multipart/form-data")]
         public IActionResult AddMenu(
-          [FromForm] string foodItemName,
-          [FromForm] decimal price,
-          [FromForm] string offers,
-          IFormFile imageFile,     // for image upload
-          //[FromForm] string categoryName,
-          //[FromForm] string dietaryPreferenceName)
-          [FromForm] int categoryId,
-          [FromForm] int dietId)
+            //[FromForm] string foodItemName,
+            //[FromForm] decimal price,
+            //[FromForm] string offers,
+            //IFormFile imageFile,
+            //[FromForm] int categoryId,
+            //[FromForm] int dietId
+            [FromForm] AddMenuRequest request
+            )
         {
-            var category = _categoryDal.GetById(categoryId);
-            if (category == null) 
-                return BadRequest("Invalid category name");
+            var category = _categoryDal.GetAllCategories()
+                .FirstOrDefault(c => c.CategoryName == request.CategoryName);
+            if (category == null) return BadRequest("Invalid categoryName");
 
-            var diet = _dietDal.GetById(dietId);
-            if (diet == null) 
-                return BadRequest("Invalid dietary preference name");
+            var diet = _dietDal.GetAllDietPreferences()
+                .FirstOrDefault(d => d.Diet == request.DietaryPreferenceName);
+            if (diet == null) return BadRequest("Invalid dietaryPreferenceName");
 
-            var imagePath = _imageFal.SaveImage(imageFile);
+            var imagePath = _imageFal.SaveImage(request.ImageFile);
 
             var menuItem = new Menu
             {
-                FoodItemName = foodItemName,
-                Price = price,
-                Offers = offers,
-                ImageUrl = imagePath,      // Save image and store path
+                FoodItemName = request.FoodItemName,
+                Price = request.Price,
+                Offers = request.Offers,
+                ImageUrl = imagePath,
                 CategoryId = category.CategoryId,
                 DietId = diet.DietId
             };
@@ -109,68 +110,39 @@ namespace CulinaryCart.Controllers
         }
 
         // Update existing menu item
-        //public IActionResult UpdateMenu(int id, [FromForm] MenuUpdateRequest request)
-        //{
-        //    try
-        //    {
-        //        var updated = _menuDal.UpdateItem(id, request);
-        //        if (!updated)
-        //            return NotFound("Menu item not found");
-
-        //        return Ok("Menu item updated successfully");
-        //    }
-        //    catch (System.Exception ex)
-        //    {
-        //        return BadRequest(ex.Message);
-        //    }
-        //}
-
-
-        // Update existing menu item
         [HttpPut("UpdateMenu/{id}")]
         [Consumes("multipart/form-data")]
         public IActionResult UpdateMenu(
-            int id,
-            [FromForm] decimal? price,
-            [FromForm] string? offers,
-            IFormFile? imageFile,       // for uploading new image
-            //[FromForm] string? categoryName,
-            //[FromForm] string? dietaryPreferenceName)
-            [FromForm] int categoryId,
-            [FromForm] int dietId) 
+            int id, [FromForm] UpdateMenuRequest request)
+            //[FromForm] decimal? price,
+            //[FromForm] string? offers,
+            //IFormFile? imageFile,
+            //[FromForm] int? categoryId,
+            //[FromForm] int? dietId)
         {
-
             var existing = _menuDal.GetItem(id);
-            if (existing == null) 
-                return NotFound("Menu item not found");
+            if (existing == null) return NotFound("Menu item not found");
 
-            // Apply updates
-            if (price.HasValue)
-                existing.Price = price.Value;
+            if (request.Price.HasValue) existing.Price = request.Price.Value;
+            if (!string.IsNullOrEmpty(request.Offers)) 
+                existing.Offers = request.Offers;
 
-            if (!string.IsNullOrEmpty(offers))
-                existing.Offers = offers;
+            if (request.ImageFile != null)
+                existing.ImageUrl = _imageFal.SaveImage(request.ImageFile);
 
-            if (imageFile != null)
+            if (!string.IsNullOrEmpty(request.CategoryName))
             {
-                // Save new image and update path
-                var imagePath = _imageFal.SaveImage(imageFile);
-                existing.ImageUrl = imagePath;
-            }
-
-            if (categoryId>0)
-            {
-                var category = _categoryDal.GetById(categoryId);
-                if (category == null) 
-                    return BadRequest("Invalid categoryId");
+                var category = _categoryDal.GetAllCategories()
+                    .FirstOrDefault(c => c.CategoryName == request.CategoryName);
+                if (category == null) return BadRequest("Invalid categoryName");
                 existing.CategoryId = category.CategoryId;
             }
 
-            if (dietId>0)
+            if (!string.IsNullOrEmpty(request.DietaryPreferenceName))
             {
-                var diet = _dietDal.GetById(dietId);
-                if (diet == null) 
-                    return BadRequest("Invalid dietId");
+                var diet = _dietDal.GetAllDietPreferences()
+                    .FirstOrDefault(d => d.Diet == request.DietaryPreferenceName);
+                if (diet == null) return BadRequest("Invalid dietaryPreferenceName");
                 existing.DietId = diet.DietId;
             }
 
@@ -179,7 +151,6 @@ namespace CulinaryCart.Controllers
 
             return Ok(new { Message = "Menu item updated successfully", Item = existing });
         }
-
 
         // Delete menu item
         [HttpDelete("DeleteMenu/{id}")]

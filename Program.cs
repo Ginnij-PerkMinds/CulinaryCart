@@ -5,6 +5,7 @@ using CulinaryCart.CulinaryFAL;
 using CulinaryCart.Filters;
 using CulinaryCart.Middleware;
 using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -32,9 +33,16 @@ internal class Program
             {
                 Version = "v1",
                 Title = "CulinaryCart API",
+                Description = "API for managing menu items, categories, dietary preferences, and order history in the CulinaryCart application.",
             });
 
             c.OperationFilter<FileUploadOperationFilter>();
+
+            c.SchemaFilter<DropdownSchemaFilter>();
+
+            c.OperationFilter<ShowMenuOperationFilter>();
+
+            c.OperationFilter<FormDataOperationFilter>();
         });
 
         builder.Services.AddDbContext<CulinaryCartDbContext>(options =>
@@ -62,6 +70,8 @@ internal class Program
         });
 
         app.UseGlobalExceptionMiddleware();
+
+        app.UseStaticFiles();
 
         app.UseHttpsRedirection();
         app.UseAuthorization();

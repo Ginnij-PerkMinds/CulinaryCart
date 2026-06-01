@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.OpenApi; 
+using Microsoft.OpenApi.Models; 
 using Swashbuckle.AspNetCore.SwaggerGen;    
 using System.Linq;
 
@@ -10,24 +10,24 @@ namespace CulinaryCart.Filters
         public void Apply(OpenApiOperation operation, OperationFilterContext context)
         {
             var fileUploadParams = context.ApiDescription.ParameterDescriptions
-                .Where(p => p.Type == typeof(IFormFile));
+                .Where(p => p.Type == typeof(IFormFile) || p.Type == typeof(IFormCollection));
 
             if (fileUploadParams.Any())
             {
                 operation.RequestBody = new OpenApiRequestBody
                 {
-                    Content =
+                    Content = new Dictionary<string, OpenApiMediaType>
                     {
                         ["multipart/form-data"] = new OpenApiMediaType
                         {
                             Schema = new OpenApiSchema
                             {
-                                Type = Microsoft.OpenApi.JsonSchemaType.Object,
-                                Properties =
+                                Type ="object",
+                                Properties = new Dictionary<string, OpenApiSchema>
                                 {
-                                    ["file"] = new OpenApiSchema
+                                    ["imagefile"] = new OpenApiSchema
                                     {
-                                        Type = Microsoft.OpenApi.JsonSchemaType.String,
+                                        Type = "string",
                                         Format = "binary"
                                     }
                                 }

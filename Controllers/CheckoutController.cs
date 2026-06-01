@@ -14,7 +14,7 @@ namespace CulinaryCart.Controllers
             _cartBal = cartBal;
         }
 
-        // ✅ Place order (checkout)
+        // Place order (checkout)
         [HttpPost("placeorder")]
         public IActionResult PlaceOrder()
         {

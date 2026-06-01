@@ -19,7 +19,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             _orderHistoryDal = orderHistoryDal;
         }
 
-        // ✅ Centralized business logic for offers/discounts
+        // Business logic for offers/discounts
         public decimal CalculateFinalPrice(Menu menuItem, int qty)
         {
             if (menuItem == null) return 0;
@@ -59,7 +59,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             return finalprice;
         }
 
-        // ✅ Add item to cart
+        // Add item to cart
         public void AddItem(int foodItemId, int qty)
         {
             var menuItem = _menuDal.GetItem(foodItemId);
@@ -93,7 +93,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
 
 
 
-        // ✅ Update item in cart
+        // Update item in cart
         public void UpdateItem(int foodItemId, int qty)
         {
             var item = _orderHistoryDal.GetAll()
@@ -114,7 +114,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
 
 
 
-        // ✅ Delete item from cart
+        // Delete item from cart
         public void DeleteItem(int foodItemId)
         {
             var item = _orderHistoryDal.GetAll()
@@ -128,7 +128,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
         
 
 
-        // ✅ Calculate total cart value
+        // Calculate total cart value
         public decimal CalculateCartTotal()
         {
             return _orderHistoryDal.GetAll()
@@ -136,7 +136,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 .Sum(h => h.FinalPrice);
         }
 
-        // ✅ Checkout (mark items as checked out)
+        // Checkout (mark items as checked out)
         public void Checkout()
         {
             var items = _orderHistoryDal.GetAll()
@@ -150,7 +150,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             }
         }
 
-        // ✅ Implemented: return cart items
+        // Implemented: return cart items
         public IEnumerable<OrderHistory> GetCartItems()
         {
             return _orderHistoryDal.GetAll()
