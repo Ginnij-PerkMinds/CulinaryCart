@@ -41,13 +41,19 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             return diet;
         }
 
-        // Update diet preference
-        public bool UpdateDietPreference(int id, DietaryPreference diet)
+        // Get dietary preference by ID
+        public DietaryPreference GetDietById(int id)
         {
-            var existing = _db.DietaryPreference.Find(id);
+            return _db.DietaryPreference.FirstOrDefault(d => d.DietId == id);
+        }
+
+        // Update diet preference
+        public bool UpdateDietPreference(int id,string updatedName)
+        {
+            var existing = _db.DietaryPreference.FirstOrDefault(d => d.DietId == id);
             if (existing == null) return false;
 
-            existing.Diet = diet.Diet;
+            existing.Diet = updatedName;
             _db.SaveChanges();
             return true;
         }
@@ -55,7 +61,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
         // Delete diet preference
         public bool DeleteDietPreference(int id)
         {
-            var existing = _db.DietaryPreference.Find(id);
+            var existing = _db.DietaryPreference.FirstOrDefault(d => d.DietId == id);
             if (existing == null) return false;
 
             _db.DietaryPreference.Remove(existing);

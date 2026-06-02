@@ -21,12 +21,6 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             return _db.Category.ToList();
         }
 
-        // Get category by ID
-        public Category? GetById(int id)
-        {
-            return _db.Category.FirstOrDefault(c => c.CategoryId == id);
-        }
-
         // Get category by name
         public Category? GetByName(string name)
         {
@@ -41,13 +35,19 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             return category;
         }
 
-        // Update category
-        public bool UpdateCategory(int id, Category category)
+        // Get category by ID
+        public Category GetById(int id)
         {
-            var existing = _db.Category.Find(id);
+            return _db.Category.FirstOrDefault(c => c.CategoryId == id);
+        }
+
+        // Update category
+        public bool UpdateCategory(int id, string updatedName)
+        {
+            var existing = _db.Category.FirstOrDefault(c => c.CategoryId == id);
             if (existing == null) return false;
 
-            existing.CategoryName = category.CategoryName;
+            existing.CategoryName = updatedName;
             _db.SaveChanges();
             return true;
         }
@@ -55,7 +55,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
         // Delete category
         public bool DeleteCategory(int id)
         {
-            var existing = _db.Category.Find(id);
+            var existing = _db.Category.FirstOrDefault(c => c.CategoryId == id);
             if (existing == null) return false;
 
             _db.Category.Remove(existing);

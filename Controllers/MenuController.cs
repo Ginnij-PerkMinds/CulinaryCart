@@ -69,24 +69,6 @@ namespace CulinaryCart.Controllers
         }
 
 
-
-        //// Get Categories
-        //[HttpGet("GetCategories")]
-        //public IActionResult GetCategories()
-        //{
-        //    var categories = _categoryDal.GetAllCategories();
-        //    return Ok(categories);
-        //}
-
-        //// Get DietaryPreferences
-        //[HttpGet("GetDietaryPreferences")]
-        //public IActionResult GetDietaryPreferences()
-        //{
-        //    var diets = _dietDal.GetAllDietPreferences();
-        //    return Ok(diets);
-        //}
-
-     
         // Add new menu item
         [HttpPost("AddMenu")]
         [Consumes("multipart/form-data")]
@@ -124,6 +106,15 @@ namespace CulinaryCart.Controllers
             return Ok(new { Message = "Menu item added successfully", Item = added });
         }
 
+        // Get menu item by ID
+        [HttpGet("GetMenu/{id}")]
+        public IActionResult GetMenu(int id)
+        {
+            var menuItem = _menuDal.GetItem(id);
+            if (menuItem == null) return NotFound("Menu item not found");
+
+            return Ok(menuItem);
+        }
         // Update existing menu item
         [HttpPut("UpdateMenu/{id}")]
         [Consumes("multipart/form-data")]

@@ -14,6 +14,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             _db = db; 
         }
 
+        // Get all menu items
         public List<Menu> GetAllMenuItems()
         {
             return _db.Menu
@@ -22,7 +23,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
                 .ToList();
         }
 
-      
+        // Get menu item by ID
         public Menu? GetItem(int id)
         {
             return _db.Menu
@@ -31,14 +32,15 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
                 .FirstOrDefault(m => m.FoodItemID == id);
         }
 
-        // ✅ Add new item
+        // Add new item
         public Menu AddItem(Menu menu)
         {
             _db.Menu.Add(menu);
             _db.SaveChanges();
             return menu;
         }
-        // ✅ Update existing item
+
+        // Update existing item
         public bool UpdateItem(int id, Menu menu)
         {
             var existing = _db.Menu.Find(id);
@@ -55,7 +57,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             return true;
         }
 
-        // ✅ Delete item
+        // Delete item
         public bool DeleteItem(int id)
         {
             var existing = _db.Menu.Find(id);
@@ -66,7 +68,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             return true;
         }
 
-        // ✅ Filter + Pagination
+        // Filter + Pagination
         public List<Menu> GetFilteredMenu(int? categoryId, int? dietId, int pageNumber = 1, int pageSize = 10)
         {
             var query = _db.Menu
@@ -87,7 +89,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
                 .ToList();
         }
 
-        // ✅ Count for pagination metadata
+        // Count for pagination metadata
         public int CountFilteredMenu(int? categoryId, int? dietId)
         {
             var query = _db.Menu.AsQueryable();

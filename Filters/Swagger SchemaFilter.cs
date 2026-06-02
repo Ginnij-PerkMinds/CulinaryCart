@@ -13,41 +13,36 @@ public class DropdownSchemaFilter : ISchemaFilter
         _serviceProvider = serviceProvider;
     }
 
-    public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+    public void Apply(OpenApiSchema schema, SchemaFilterContext context) 
     {
-        // Create a scope so scoped services can be resolved safely
-        using var scope = _serviceProvider.CreateScope();
-        var categoryDal = scope.ServiceProvider.GetRequiredService<CategoryDAL>();
-        var dietDal = scope.ServiceProvider.GetRequiredService<DietDAL>();
-
-        if (context.Type == typeof(AddMenuRequest) ||
-            context.Type == typeof(UpdateMenuRequest) ||
-            context.Type == typeof(ShowMenuFilterRequest))  
+        using (var scope = _serviceProvider.CreateScope())
         {
-            var categories = categoryDal.GetAllCategories()
-                .Select(c => c.CategoryName)
-                .ToList();
+            var categoryDAL = scope.ServiceProvider.GetRequiredService<CategoryDAL>();
+            var dietDAL = scope.ServiceProvider.GetRequiredService<DietDAL>();
 
-            if (schema.Properties.ContainsKey("CategoryName"))
+            // For AddMenuRequest DTO
+            if (context.Type == typeof(AddMenuRequest))
             {
-                schema.Properties["CategoryName"].Enum = categories
-                    .Select(c => new OpenApiString(c))
-                    .Cast<IOpenApiAny>()
-                    .ToList();
-            }
+                var categories = categoryDAL.GetAllCategories();
+                if (schema.Properties.ContainsKey("CategoryId"))
+                {
+                    schema.Properties["CategoryId"].Enum = categories
+                        .Select(c => new OpenApiInteger(c.CategoryId))
+                        .Cast<IOpenApiAny>()
+                        .ToList();
+                }
 
-            var diets = dietDal.GetAllDietPreferences()
-                .Select(d => d.Diet)
-                .ToList();
-
-            if (schema.Properties.ContainsKey("DietaryPreferenceName"))
-            {
-                schema.Properties["DietaryPreferenceName"].Enum = diets
-                    .Select(d => new OpenApiString(d))
-                    .Cast<IOpenApiAny>()
-                    .ToList();
+                var diets = dietDAL.GetAllDietPreferences();
+                if (schema.Properties.ContainsKey("DietId"))
+                {
+                    schema.Properties["DietId"].Enum = diets
+                        .Select(d => new OpenApiInteger(d.DietId))
+                        .Cast<IOpenApiAny>()
+                        .ToList();
+                }
             }
         }
     }
+
 }
 
