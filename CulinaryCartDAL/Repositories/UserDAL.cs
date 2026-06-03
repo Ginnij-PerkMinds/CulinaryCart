@@ -1,0 +1,34 @@
+﻿using CulinaryCart.CulinaryCartDAL.Models;
+using Microsoft.EntityFrameworkCore;
+using CulinaryCart.CulinaryCartDAL.DbContext;  
+
+
+namespace CulinaryCart.CulinaryCartDAL.Repositories
+{
+   
+    public class UserDAL
+    {
+        private readonly CulinaryCartDbContext _context;
+
+        public UserDAL(CulinaryCartDbContext context)
+        {
+            _context = context;
+        }
+
+        
+        public User GetByEmail(string email)
+        {
+            
+            return _context.Users
+                .FirstOrDefault(u => u.EmailId.ToLower() == email.ToLower());
+        }
+
+        
+        public void Add(User user)
+        {
+            _context.Users.Add(user);
+            _context.SaveChanges(); 
+        }
+    }
+}
+

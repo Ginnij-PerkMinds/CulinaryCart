@@ -12,6 +12,7 @@ public class CulinaryCartDbContext : DbContext
     public DbSet<Category> Category { get; set; }       
     public DbSet<DietaryPreference> DietaryPreference { get; set; }  
     public DbSet<CartItem> CartItems { get; set; }
+    public DbSet<User> Users { get; set; }   //added for user management
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -20,6 +21,7 @@ public class CulinaryCartDbContext : DbContext
         modelBuilder.Entity<Menu>().ToTable("Menu");
         modelBuilder.Entity<OrderHistory>().ToTable("OrderHistory");
         modelBuilder.Entity<CartItem>().ToTable("CartItems");
+        modelBuilder.Entity<User>().ToTable("Users");  // added for user management
 
         // Defining primary keys:
         modelBuilder.Entity<Category>().HasKey(c => c.CategoryId);          
@@ -27,6 +29,7 @@ public class CulinaryCartDbContext : DbContext
         modelBuilder.Entity<Menu>().HasKey(m => m.FoodItemID);                  
         modelBuilder.Entity<OrderHistory>().HasKey(o => o.HistoryID);          
         modelBuilder.Entity<CartItem>().HasKey(c => c.CartItemId);
+        modelBuilder.Entity<User>().HasKey(u => u.UserId);  // added for user management
 
         // Relationships
         modelBuilder.Entity<Menu>()

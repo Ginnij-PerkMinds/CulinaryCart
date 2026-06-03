@@ -54,9 +54,11 @@ internal class Program
         builder.Services.AddScoped<CategoryDAL>();
         builder.Services.AddScoped<DietDAL>();
         builder.Services.AddScoped<OrderHistoryDAL>();
+        builder.Services.AddScoped<UserDAL>();
 
         builder.Services.AddScoped<MenuBAL>();
         builder.Services.AddScoped<CartBAL>();
+        builder.Services.AddScoped<UserBAL>();
 
         builder.Services.AddScoped<IImageFAL, ImageFAL>();
 
