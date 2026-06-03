@@ -15,14 +15,14 @@ public class ImageFAL : IImageFAL
             throw new Exception("Invalid image file");
 
         var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-        var path = Path.Combine(_env.WebRootPath, "uploads", fileName);
+        var path = Path.Combine(_env.WebRootPath, "uploads","images", fileName);
 
         using (var stream = new FileStream(path, FileMode.Create))
         {
             file.CopyTo(stream);
         }
 
-        return "/uploads/" + fileName; // ✅ relative path for DB
+        return "/uploads/images/" + fileName; // ✅ relative path for DB
     }
 
     public void DeleteImage(string filePath)
