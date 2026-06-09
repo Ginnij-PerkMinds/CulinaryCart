@@ -33,7 +33,7 @@ internal class Program
             {
                 Version = "v1",
                 Title = "CulinaryCart API",
-                Description = "API for managing menu items, categories, dietary preferences, and order history in the CulinaryCart application.",
+                Description = "API for Managing Menu Items, Categories, Dietary Preferences, Cart Procedures and Order History in the CulinaryCart application.",
             });
 
             c.OperationFilter<FileUploadOperationFilter>();

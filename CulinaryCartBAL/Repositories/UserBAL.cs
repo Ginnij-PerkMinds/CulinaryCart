@@ -1,5 +1,8 @@
 ﻿using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryCartDAL.Repositories;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -63,5 +66,37 @@ public class UserBAL
             return Convert.ToBase64String(hash);
         }
     }
+
+    public string? Login(string email, string password)
+    {
+        var user = _userDal.GetByEmail(email);
+        if (user == null) return null;
+
+        string hashedPassword = HashPassword(password);
+        if (user.PasswordHash != hashedPassword) return null;
+
+        // ✅ Normally generate JWT here
+        // For demo, return a fake token
+        return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{email}:{DateTime.Now}"));
+        //    var tokenHandler = new JwtSecurityTokenHandler();
+        //    var key = Encoding.ASCII.GetBytes("YourSuperSecretKey123!"); // store securely
+        //    var tokenDescriptor = new SecurityTokenDescriptor
+        //    {
+        //        Subject = new ClaimsIdentity(new[]
+        //        {
+        //        new Claim(ClaimTypes.Name, user.Name),
+        //        new Claim(ClaimTypes.Email, user.EmailId)
+        //    }),
+        //        Expires = DateTime.UtcNow.AddMinutes(30),
+        //        SigningCredentials = new SigningCredentials(
+        //            new SymmetricSecurityKey(key),
+        //            SecurityAlgorithms.HmacSha256Signature
+        //        )
+        //    };
+
+        //    var token = tokenHandler.CreateToken(tokenDescriptor);
+        //    return tokenHandler.WriteToken(token);
+    }
+
 }
 
