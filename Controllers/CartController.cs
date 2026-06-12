@@ -52,6 +52,12 @@ namespace CulinaryCart.Controllers
         [HttpDelete("delete/{foodItemId}")]
         public IActionResult DeleteCartItem(int foodItemId)
         {
+            var item = _menuDal.GetItem(foodItemId); // or _cartDal.GetItem
+            if (item == null)
+            {
+                return NotFound($"Cart item with ID {foodItemId} not found.");
+            }
+
             _cartBal.DeleteItem(foodItemId);
             return Ok(CulinaryCartConstants.Messages.ItemRemoved);
         }

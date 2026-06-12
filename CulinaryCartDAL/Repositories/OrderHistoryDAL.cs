@@ -1,5 +1,6 @@
 ﻿using CulinaryCart.CulinaryCartDAL.DbContext;
 using CulinaryCart.CulinaryCartDAL.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryCart.CulinaryCartDAL.Repositories
 {
@@ -21,11 +22,17 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             _db.OrderHistory.Update(history); 
             _db.SaveChanges();
         }
-        public void Delete(OrderHistory history) 
-        { 
-            _db.OrderHistory.Remove(history); 
-            _db.SaveChanges(); 
+        //public void Delete(OrderHistory history) 
+        //{ 
+        //    _db.OrderHistory.Remove(history); 
+        //    _db.SaveChanges(); 
+        //}
+        public void Delete(OrderHistory item)
+        {
+            _db.OrderHistory.Remove(item);
+            _db.SaveChanges();
         }
+
         public List<OrderHistory> GetAll()
         {
             return _db.OrderHistory.ToList();

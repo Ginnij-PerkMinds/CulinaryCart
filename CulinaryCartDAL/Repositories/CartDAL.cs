@@ -35,6 +35,10 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
         }
 
         //Delete cart item
+        public CartItem GetItem(int foodItemId)
+        {
+            return _context.CartItems.FirstOrDefault(c => c.FoodItemId == foodItemId);
+        }
         public void Delete(CartItem item)
         {
             _context.CartItems.Remove(item);
