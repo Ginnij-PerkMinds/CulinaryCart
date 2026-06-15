@@ -77,6 +77,9 @@ internal class Program
 
         app.UseStaticFiles();
 
+        // Use CORS
+        app.UseCors("AllowAngular");
+
         app.UseHttpsRedirection();
         app.UseAuthorization();
 
