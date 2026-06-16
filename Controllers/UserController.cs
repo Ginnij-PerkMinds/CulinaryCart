@@ -40,6 +40,38 @@ namespace CulinaryCart.Controllers
 
             return Ok(new { token = result, message = "Login successful" });
         }
+
+        // ✅ Get all users
+        [HttpGet("all")]
+        public IActionResult GetAllUsers()
+        {
+            var users = _userBal.GetAllUsers();
+            return Ok(users);
+        }
+
+        // ✅ Update user
+        [HttpPut("update/{id}")]
+        public IActionResult UpdateUser(int id, [FromBody] UpdateUserDto dto)
+        {
+            var result = _userBal.UpdateUser(id, dto);
+
+            if (result == "User not found")
+                return NotFound(new { message = result });
+
+            return Ok(new { message = result });
+        }
+
+        // ✅ Delete user (soft delete by setting is_active = false)
+        [HttpDelete("delete/{id}")]
+        public IActionResult DeleteUser(int id)
+        {
+            var result = _userBal.DeleteUser(id);
+
+            if (result == "User not found")
+                return NotFound(new { message = result });
+
+            return Ok(new { message = result });
+        }
     }
 }
 

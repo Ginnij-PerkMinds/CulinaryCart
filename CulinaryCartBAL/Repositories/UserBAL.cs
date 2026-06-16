@@ -1,4 +1,5 @@
-﻿using CulinaryCart.CulinaryCartDAL.Models;
+﻿using CulinaryCart.CulinaryCartBAL.Models.DTO;
+using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryCartDAL.Repositories;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -34,11 +35,18 @@ public class UserBAL
         // Hash password 
         string hashedPassword = HashPassword(password);
 
+        var istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+        var nowIst = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, istZone);
+
         var newUser = new User
         {
             Name = name,
             EmailId = email,
             PasswordHash = hashedPassword,
+            CreatedAt = nowIst,
+            //UpdatedAt = nowIst,
+            IsActive = true,
+            IsAdmin = false,
         };
 
         _userDal.Add(newUser);
@@ -74,29 +82,53 @@ public class UserBAL
 
         string hashedPassword = HashPassword(password);
         if (user.PasswordHash != hashedPassword) return null;
-
-        // ✅ Normally generate JWT here
-        // For demo, return a fake token
         return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{email}:{DateTime.Now}"));
-        //    var tokenHandler = new JwtSecurityTokenHandler();
-        //    var key = Encoding.ASCII.GetBytes("YourSuperSecretKey123!"); // store securely
-        //    var tokenDescriptor = new SecurityTokenDescriptor
-        //    {
-        //        Subject = new ClaimsIdentity(new[]
-        //        {
-        //        new Claim(ClaimTypes.Name, user.Name),
-        //        new Claim(ClaimTypes.Email, user.EmailId)
-        //    }),
-        //        Expires = DateTime.UtcNow.AddMinutes(30),
-        //        SigningCredentials = new SigningCredentials(
-        //            new SymmetricSecurityKey(key),
-        //            SecurityAlgorithms.HmacSha256Signature
-        //        )
-        //    };
+    }
+       
+        public List<UserDto> GetAllUsers()
+        {
+        var users = _userDal.GetAll();
+        return users.Select(u => new UserDto
+        {
+            UserId = u.UserId,
+            Name = u.Name,
+            EmailId = u.EmailId,
+            IsActive = u.IsActive,
+            IsAdmin = u.IsAdmin,
+            CreatedAt = u.CreatedAt,
+            UpdatedAt = u.UpdatedAt
+        }).ToList();
+       }
 
-        //    var token = tokenHandler.CreateToken(tokenDescriptor);
-        //    return tokenHandler.WriteToken(token);
+    public string UpdateUser(int id, UpdateUserDto dto)
+    {
+        var user = _userDal.GetById(id);
+        if (user == null) return "User not found";
+
+        user.Name = dto.Name;
+        user.EmailId = dto.EmailId;
+        user.IsActive = dto.IsActive;
+        user.IsAdmin = dto.IsAdmin;
+
+        var istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+        user.UpdatedAt = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, istZone);
+
+        _userDal.Update(user);
+        return "User updated successfully";
     }
 
+    public string DeleteUser(int id)
+    {
+        var user = _userDal.GetById(id);
+        if (user == null) return "User not found";
+
+        //user.IsActive = false;
+
+        //_userDal.Update(user);
+        _userDal.Delete(user);
+        return "User deleted successfully";
+    }
 }
+
+
 
