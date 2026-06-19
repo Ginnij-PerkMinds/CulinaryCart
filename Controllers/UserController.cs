@@ -1,4 +1,6 @@
 ﻿using CulinaryCart.CulinaryCartBAL.Models.DTO;
+using CulinaryCart.CulinaryCartBAL.Repositories;
+using CulinaryCart.CulinaryFAL;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
 
@@ -9,16 +11,23 @@ namespace CulinaryCart.Controllers
     public class AuthController : ControllerBase
     {
         private readonly UserBAL _userBal;
+        private readonly IImageFAL _imageFal;
 
-        public AuthController(UserBAL userBal)
+        public AuthController(UserBAL userBal, IImageFAL imageFal)
         {
             _userBal = userBal;
+            _imageFal = imageFal;
         }
 
         [HttpPost("signup")]
         public IActionResult Signup([FromBody] SignupDto Dto) 
         {
-            var result = _userBal.Signup(Dto.Name, Dto.Email, Dto.Password); 
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = _userBal.Signup(Dto); 
 
             if (result == "User already exists")
                 return Conflict(new { message = result });
@@ -33,45 +42,13 @@ namespace CulinaryCart.Controllers
         [HttpPost("login")]
         public IActionResult Login([FromBody] Login dto)
         {
-            var result = _userBal.Login(dto.Email, dto.Password);
+            var result = _userBal.Loginresponse(dto.Email, dto.Password);
 
             if (result == null)
                 return Unauthorized(new { message = "Invalid email or password" });
 
             return Ok(new { token = result, message = "Login successful" });
-        }
-
-        // ✅ Get all users
-        [HttpGet("all")]
-        public IActionResult GetAllUsers()
-        {
-            var users = _userBal.GetAllUsers();
-            return Ok(users);
-        }
-
-        // ✅ Update user
-        [HttpPut("update/{id}")]
-        public IActionResult UpdateUser(int id, [FromBody] UpdateUserDto dto)
-        {
-            var result = _userBal.UpdateUser(id, dto);
-
-            if (result == "User not found")
-                return NotFound(new { message = result });
-
-            return Ok(new { message = result });
-        }
-
-        // ✅ Delete user (soft delete by setting is_active = false)
-        [HttpDelete("delete/{id}")]
-        public IActionResult DeleteUser(int id)
-        {
-            var result = _userBal.DeleteUser(id);
-
-            if (result == "User not found")
-                return NotFound(new { message = result });
-
-            return Ok(new { message = result });
-        }
+        }        
     }
 }
 

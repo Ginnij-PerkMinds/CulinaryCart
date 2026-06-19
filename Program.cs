@@ -8,6 +8,8 @@ using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
+using Swashbuckle.AspNetCore.Annotations;
+
 
 
 internal class Program
@@ -18,8 +20,8 @@ internal class Program
 
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("AllowAngular",
-                policy => policy.WithOrigins("http://localhost:4200")
+            options.AddPolicy("AllowLocalHost",
+                policy => policy.WithOrigins("http://localhost:5209","http://localhost:4200")
                                 .AllowAnyHeader()
                                 .AllowAnyMethod());
         });
@@ -44,6 +46,7 @@ internal class Program
                 Description = "API for Managing Menu Items, Categories, Dietary Preferences, Cart Procedures and Order History in the CulinaryCart application.",
             });
 
+            
             c.OperationFilter<FileUploadOperationFilter>();
 
             c.SchemaFilter<DropdownSchemaFilter>();
@@ -51,12 +54,17 @@ internal class Program
             c.OperationFilter<ShowMenuOperationFilter>();
 
             c.OperationFilter<FormDataOperationFilter>();
-
+            c.OperationFilter<SignupFormDataOperationFilter>();
+            c.OperationFilter<UpdateUserFormDataOperationFilter>();
+            c.SchemaFilter<UserResponseSchemaFilter>();
             c.OperationFilter<ShowMenuPaginationOperationFilter>();
+
         });
 
         builder.Services.AddDbContext<CulinaryCartDbContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+                   .LogTo(Console.WriteLine, LogLevel.Information)   // ✅ logs SQL to console
+                   .EnableSensitiveDataLogging());
 
         builder.Services.AddScoped<MenuDAL>();
         builder.Services.AddScoped<CategoryDAL>();
@@ -86,7 +94,7 @@ internal class Program
         app.UseStaticFiles();
 
         // Use CORS
-        app.UseCors("AllowAngular");
+        app.UseCors("AllowLocalHost");
 
         app.UseHttpsRedirection();
         app.UseAuthorization();

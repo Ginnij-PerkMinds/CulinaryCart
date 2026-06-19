@@ -22,7 +22,7 @@ public class ImageFAL : IImageFAL
             file.CopyTo(stream);
         }
 
-        return "/uploads/images/" + fileName; // ✅ relative path for DB
+        return "/uploads/images/" + fileName; // relative path of file
     }
 
     public void DeleteImage(string filePath)
