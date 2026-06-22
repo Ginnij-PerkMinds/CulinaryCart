@@ -10,61 +10,61 @@ namespace CulinaryCart.Controllers
     public class UserController : ControllerBase
     {
         private readonly UserBAL _userBal;
-        private readonly IImageFAL _imageFal;
 
         public UserController(UserBAL userBal, IImageFAL imageFal)
         {
             _userBal = userBal;
-            _imageFal = imageFal;
         }
 
-        // Get all users
         [HttpGet("GetAllUsers")]
         public IActionResult GetAllUsers()
         {
             var users = _userBal.GetAllUsers();
-            if (!users.Any())
-                return Ok(new { Message = "No users found" });
-
             return Ok(users);
         }
 
-        // Get user by ID
         [HttpGet("GetUser/{id}")]
         public IActionResult GetUser(int id)
         {
             var users = _userBal.GetAllUsers();
             var user = users.FirstOrDefault(u => u.UserId == id);
-
-            if (user == null)
-                return NotFound(new { Message = "User not found" });
-
-            return Ok(user);
+            return user == null ? NotFound(new { Message = "User not found" }) : Ok(user);
         }
 
-        // Update user
-        [HttpPut("UpdateUser/{id}")]
-        [Consumes("multipart/form-data")]
-        public IActionResult UpdateUser(int id, [FromForm] UpdateUserDto dto)
+
+
+        // ✅ Unified update endpoint
+        // For toggles (JSON)
+        [HttpPut("UpdateFlags/{id}")]
+        public IActionResult UpdateFlags(int id, [FromBody] UpdateFlagsDto dto)
         {
-            var result = _userBal.UpdateUser(id, dto);
-
-            if (result == "User not found")
-                return NotFound(new { Message = result });
-
-            return Ok(new { Message = result });
+            var result = _userBal.UpdateFlags(id, dto);
+            return result == "User not found"
+                ? NotFound(new { Message = result })
+                : Ok(new { Message = result });
         }
 
-        // Delete user
+        // For profile updates (FormData)
+        [HttpPut("UpdateUserForm/{id}")]
+        [Consumes("multipart/form-data")]
+        public IActionResult UpdateUserProfile(int id, [FromForm] UpdateUserDto dto)
+        {
+            var result = _userBal.UpdateUserProfile(id, dto);
+            return result == "User not found"
+                ? NotFound(new { Message = result })
+                : Ok(new { Message = result });
+        }
+
+
         [HttpDelete("DeleteUser/{id}")]
         public IActionResult DeleteUser(int id)
         {
             var result = _userBal.DeleteUser(id);
-
-            if (result == "User not found")
-                return NotFound(new { Message = result });
-
-            return Ok(new { Message = result });
+            return result == "User not found" ? NotFound(new { Message = result }) : Ok(new { Message = result });
         }
     }
 }
+
+
+
+

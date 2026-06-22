@@ -5,11 +5,11 @@ using CulinaryCart.CulinaryFAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Runtime.ConstrainedExecution;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-
 
 public class UserBAL
 {
@@ -38,12 +38,14 @@ public class UserBAL
         }
 
         // Hash password 
+
+
         string hashedPassword = HashPassword(Dto.Password);
 
         var istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
         var nowIst = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, istZone);
 
-   
+
         var newUser = new User
         {
             Name = Dto.Name,
@@ -63,7 +65,7 @@ public class UserBAL
         var hasUpper = new Regex(@"[A-Z]+");
         var hasLower = new Regex(@"[a-z]+");
         var hasDigit = new Regex(@"\d+");
-        var hasSpecial = new Regex(@"[\W]+"); 
+        var hasSpecial = new Regex(@"[\W]+");
         return password.Length >= 8 &&
                hasUpper.IsMatch(password) &&
                hasLower.IsMatch(password) &&
@@ -80,7 +82,7 @@ public class UserBAL
         }
     }
 
-    public Loginresponse? Loginresponse (string email, string password)
+    public Loginresponse? Loginresponse(string email, string password)
     {
         var user = _userDal.GetByEmail(email);
         if (user == null) return null;
@@ -97,12 +99,11 @@ public class UserBAL
             Token = token,
             Email = user.EmailId,
             IsAdmin = user.IsAdmin
-            
+
         };
     }
-       
-        public List<UserDto> GetAllUsers()
-        {
+    public List<UserDto> GetAllUsers()
+    {
         var users = _userDal.GetAllWithAddress();
         return users.Select(u => new UserDto
         {
@@ -115,33 +116,54 @@ public class UserBAL
             IsAdmin = u.IsAdmin,
             CreatedAt = u.CreatedAt,
             UpdatedAt = u.UpdatedAt,
-             
-            HouseNo = u.Address?.HouseNo,
-            Locality = u.Address?.Locality,
-            Landmark = u.Address?.Landmark,
-            City = u.Address?.City,
-            District = u.Address?.District,
-            Pincode = u.Address?.Pincode,
-            State = u.Address?.State   
-        }).ToList();
-       }
 
-    public string UpdateUser(int id, UpdateUserDto dto)
+            //HouseNo = u.Address?.HouseNo,
+            //Locality = u.Address?.Locality,
+            //Landmark = u.Address?.Landmark,
+            //City = u.Address?.City,
+            //District = u.Address?.District,
+            //Pincode = u.Address?.Pincode,
+            //State = u.Address?.State
+
+            // Flattened address string
+            Address = string.Join(", ",
+            new[] {
+                u.Address?.HouseNo,
+                u.Address?.Locality,
+                u.Address?.Landmark,
+                u.Address?.City,
+                u.Address?.District,
+                u.Address?.Pincode,
+                u.Address?.State
+            }.Where(x => !string.IsNullOrWhiteSpace(x))
+        )
+        }).ToList();
+    }
+
+    public string UpdateFlags(int id, UpdateFlagsDto dto)
+    {
+        var user = _userDal.GetById(id);
+        if (user == null) return "User not found";
+
+        user.IsActive = dto.IsActive;
+        user.IsAdmin = dto.IsAdmin;
+
+        var istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+        user.UpdatedAt = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, istZone);
+
+        var result = _userDal.UpdateUser(user);
+        return result ? "Flags updated successfully" : "User not found";
+    }
+    public string UpdateUserProfile(int id, UpdateUserDto dto)
     {
         var user = _userDal.GetByIdWithAddress(id);
         if (user == null) return "User not found";
 
-        // Only update if provided
-        if (!string.IsNullOrWhiteSpace(dto.Name))
-            user.Name = dto.Name;
 
-        if (!string.IsNullOrWhiteSpace(dto.EmailId))
-            user.EmailId = dto.EmailId;
+        if (!string.IsNullOrWhiteSpace(dto.Name)) user.Name = dto.Name;
+        if (!string.IsNullOrWhiteSpace(dto.EmailId)) user.EmailId = dto.EmailId;
+        if (!string.IsNullOrWhiteSpace(dto.PhoneNo)) user.PhoneNo = dto.PhoneNo;
 
-        if (!string.IsNullOrWhiteSpace(dto.PhoneNo))
-            user.PhoneNo = dto.PhoneNo;
-
-        // Password update only if provided
         if (!string.IsNullOrWhiteSpace(dto.Password))
         {
             if (!IsValidPassword(dto.Password))
@@ -149,54 +171,46 @@ public class UserBAL
             user.PasswordHash = HashPassword(dto.Password);
         }
 
-        // Profile pic update only if provided
         if (dto.ProfilePic != null)
         {
             _imageFal.DeleteImage(user.ProfilePic);
             user.ProfilePic = _imageFal.SaveImage(dto.ProfilePic);
         }
 
-        // Address update only if provided
-        if (user.Address != null)
-        {
-            if (!string.IsNullOrWhiteSpace(dto.HouseNo)) user.Address.HouseNo = dto.HouseNo;
-            if (!string.IsNullOrWhiteSpace(dto.Locality)) user.Address.Locality = dto.Locality;
-            if (!string.IsNullOrWhiteSpace(dto.Landmark)) user.Address.Landmark = dto.Landmark;
-            if (!string.IsNullOrWhiteSpace(dto.City)) user.Address.City = dto.City;
-            if (!string.IsNullOrWhiteSpace(dto.District)) user.Address.District = dto.District;
-            if (!string.IsNullOrWhiteSpace(dto.Pincode)) user.Address.Pincode = dto.Pincode;
-            if (!string.IsNullOrWhiteSpace(dto.State)) user.Address.State = dto.State;
-        }
-        else
-        {
-            user.Address = new Address
-            {
-                UserId = user.UserId,
-                HouseNo = dto.HouseNo,
-                Locality = dto.Locality,
-                Landmark = dto.Landmark,
-                City = dto.City,
-                District = dto.District,
-                Pincode = dto.Pincode,
-                State = dto.State
-            };
+        if (user.Address == null) user.Address = new Address();
+        user.Address.HouseNo = dto.HouseNo ?? user.Address.HouseNo;
+        user.Address.Locality = dto.Locality ?? user.Address.Locality;
+        user.Address.Landmark = dto.Landmark ?? user.Address.Landmark;
+        user.Address.City = dto.City ?? user.Address.City;
+        user.Address.District = dto.District ?? user.Address.District;
+        user.Address.Pincode = dto.Pincode ?? user.Address.Pincode;
+        user.Address.State = dto.State ?? user.Address.State;
 
-        }
-            var istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
-        user.UpdatedAt = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, istZone);
 
-        _userDal.Update(user);
-        return "User updated successfully";
+
+        user.UpdatedAt = DateTimeOffset.Now;
+
+        var result = _userDal.UpdateUser(user);
+        return result ? "User updated successfully" : "User not found";
     }
+
+
+
     public string DeleteUser(int id)
     {
         var user = _userDal.GetById(id);
         if (user == null) return "User not found";
-
         _userDal.Delete(user);
         return "User deleted successfully";
     }
 }
+
+
+
+
+
+
+
 
 
 

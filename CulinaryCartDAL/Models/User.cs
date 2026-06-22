@@ -35,6 +35,8 @@ namespace CulinaryCart.CulinaryCartDAL.Models
 
         // Navigation
         public Address Address { get; set; }
+
+       
     }
 }
 
