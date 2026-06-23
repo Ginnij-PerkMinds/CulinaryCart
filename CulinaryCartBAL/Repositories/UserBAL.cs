@@ -38,8 +38,6 @@ public class UserBAL
         }
 
         // Hash password 
-
-
         string hashedPassword = HashPassword(Dto.Password);
 
         var istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
@@ -93,7 +91,7 @@ public class UserBAL
         // Generate token (your existing logic)
         var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{email}:{DateTime.Now}"));
 
-        // ✅ Return token + role info
+        // Return token + role info
         return new Loginresponse
         {
             Token = token,
@@ -116,14 +114,6 @@ public class UserBAL
             IsAdmin = u.IsAdmin,
             CreatedAt = u.CreatedAt,
             UpdatedAt = u.UpdatedAt,
-
-            //HouseNo = u.Address?.HouseNo,
-            //Locality = u.Address?.Locality,
-            //Landmark = u.Address?.Landmark,
-            //City = u.Address?.City,
-            //District = u.Address?.District,
-            //Pincode = u.Address?.Pincode,
-            //State = u.Address?.State
 
             // Flattened address string
             Address = string.Join(", ",
@@ -192,6 +182,24 @@ public class UserBAL
 
         var result = _userDal.UpdateUser(user);
         return result ? "User updated successfully" : "User not found";
+    }
+
+    public string ChangePassword(int id, string oldPassword, string newPassword)
+    {
+        var user = _userDal.GetById(id);
+        if (user == null) return "User not found";
+
+        string oldHash = HashPassword(oldPassword);
+        if (user.PasswordHash != oldHash) return "Incorrect old password";
+
+        if (!IsValidPassword(newPassword))
+            return "Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.";
+
+        user.PasswordHash = HashPassword(newPassword);
+        user.UpdatedAt = DateTimeOffset.Now;
+
+        var result = _userDal.UpdateUser(user);
+        return result ? "Password updated successfully" : "Error updating password";
     }
 
 

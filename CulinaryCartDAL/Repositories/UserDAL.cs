@@ -31,7 +31,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             return _context.SaveChanges() > 0 ? "User saved successfully" : "No changes were saved";
         }
 
-        // Unified update
+        // update
         public bool UpdateUser(User user)
         {
             var existingUser = _context.Users.Include(u => u.Address).FirstOrDefault(u => u.UserId == user.UserId);

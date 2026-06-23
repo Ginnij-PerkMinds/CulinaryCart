@@ -47,6 +47,7 @@ namespace CulinaryCart.Controllers
             if (result == null)
                 return Unauthorized(new { message = "Invalid email or password" });
 
+
             return Ok(new { token = result, message = "Login successful" });
         }        
     }

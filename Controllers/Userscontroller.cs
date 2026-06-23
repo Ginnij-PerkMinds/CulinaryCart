@@ -31,9 +31,22 @@ namespace CulinaryCart.Controllers
             return user == null ? NotFound(new { Message = "User not found" }) : Ok(user);
         }
 
+        [HttpGet("me")]
+        public IActionResult GetCurrentUser()
+        {
+            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "UserId");
+            if (userIdClaim == null) return Unauthorized();
 
+            int userId = int.Parse(userIdClaim.Value);
+            var users = _userBal.GetAllUsers();
+            var user = users.FirstOrDefault(u => u.UserId == userId);
 
-        // ✅ Unified update endpoint
+            return user == null
+                ? NotFound(new { Message = "User not found" })
+                : Ok(user);
+        }
+
+        // Unified update endpoint
         // For toggles (JSON)
         [HttpPut("UpdateFlags/{id}")]
         public IActionResult UpdateFlags(int id, [FromBody] UpdateFlagsDto dto)
@@ -50,11 +63,22 @@ namespace CulinaryCart.Controllers
         public IActionResult UpdateUserProfile(int id, [FromForm] UpdateUserDto dto)
         {
             var result = _userBal.UpdateUserProfile(id, dto);
+            if (result.Contains("exists")) return Conflict(new { Message = result });    // <-- added 
             return result == "User not found"
                 ? NotFound(new { Message = result })
                 : Ok(new { Message = result });
         }
 
+        // For password change (JSON)    <-- added
+        [HttpPut("ChangePassword/{id}")]
+        public IActionResult ChangePassword(int id, [FromBody] ChangePasswordDto dto)
+        {
+            var result = _userBal.ChangePassword(id, dto.OldPassword, dto.NewPassword);
+            if (result == "User not found") return NotFound(new { Message = result });
+            if (result == "Incorrect old password") return BadRequest(new { Message = result });
+            if (result.StartsWith("Password must")) return BadRequest(new { Message = result });
+            return Ok(new { Message = result });
+        }
 
         [HttpDelete("DeleteUser/{id}")]
         public IActionResult DeleteUser(int id)
