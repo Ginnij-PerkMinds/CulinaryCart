@@ -88,18 +88,44 @@ public class UserBAL
         string hashedPassword = HashPassword(password);
         if (user.PasswordHash != hashedPassword) return null;
 
+        var claims = new[]       // <-- added 24-06
+       {
+            new Claim("UserId", user.UserId.ToString()),
+            new Claim("EmailId", user.EmailId),
+            new Claim("IsAdmin", user.IsAdmin.ToString())
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("your-secret-key"));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
         // Generate token (your existing logic)
-        var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{email}:{DateTime.Now}"));
+        //var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{email}:{DateTime.Now}"));
+         
+        var token = new JwtSecurityToken(      // <-- added 24-06
+            issuer: "your-app",
+            audience: "your-app",
+            claims: claims,
+            expires: DateTime.Now.AddHours(1),
+            signingCredentials: creds
+        );
 
         // Return token + role info
         return new Loginresponse
         {
-            Token = token,
+            //Token = token,
+            //Email = user.EmailId,
+            //IsAdmin = user.IsAdmin
+            Token = new JwtSecurityTokenHandler().WriteToken(token),     // <-- added 24-06
+            UserId = user.UserId,
+            Name = user.Name,
             Email = user.EmailId,
+            PhoneNo = user.PhoneNo,
+            ProfilePic = user.ProfilePic,
             IsAdmin = user.IsAdmin
 
         };
     }
+
     public List<UserDto> GetAllUsers()
     {
         var users = _userDal.GetAllWithAddress();

@@ -1,8 +1,10 @@
 ﻿using CulinaryCart.CulinaryCartBAL.Models.DTO;
 using CulinaryCart.CulinaryCartBAL.Repositories;
+using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryFAL;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
+using static CulinaryCart.CulinaryCartBAL.Constants.CulinaryCartConstants;
 
 namespace CulinaryCart.Controllers
 {
@@ -48,7 +50,21 @@ namespace CulinaryCart.Controllers
                 return Unauthorized(new { message = "Invalid email or password" });
 
 
-            return Ok(new { token = result, message = "Login successful" });
+            return Ok(new
+            {
+                //{ token = result, message = "Login successful" });
+                token = result.Token,                    // <-- added for jwt token
+                message = "Login successful",
+                user = new
+                {
+                    userId = result.UserId,
+                    name = result.Name,
+                    emailId = result.Email,
+                    phoneNo = result.PhoneNo,
+                    profilePic = result.ProfilePic,
+                    isAdmin = result.IsAdmin
+                }
+            });
         }        
     }
 }

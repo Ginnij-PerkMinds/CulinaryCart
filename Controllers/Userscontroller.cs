@@ -34,7 +34,8 @@ namespace CulinaryCart.Controllers
         [HttpGet("me")]
         public IActionResult GetCurrentUser()
         {
-            var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "UserId");
+            //var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == "UserId");
+            var userIdClaim = HttpContext.User.FindFirst("UserId");
             if (userIdClaim == null) return Unauthorized();
 
             int userId = int.Parse(userIdClaim.Value);

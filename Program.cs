@@ -9,6 +9,9 @@ using Microsoft.OpenApi.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 
 
@@ -17,6 +20,22 @@ internal class Program
     private static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        // jwt authentication added
+        builder.Services.AddAuthentication("Bearer")       
+        .AddJwtBearer("Bearer", options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+           {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = "your-app",
+            ValidAudience = "your-app",
+            IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes("your-secret-key"))
+        };
+    });
 
 
         builder.Services.AddCors(options =>
@@ -98,6 +117,7 @@ internal class Program
         app.UseCors("AllowLocalHost");
 
         app.UseHttpsRedirection();
+        app.UseAuthentication();   // <-- added 24-06
         app.UseAuthorization();
 
         app.MapControllers();
