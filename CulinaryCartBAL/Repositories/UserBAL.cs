@@ -129,8 +129,17 @@ public class UserBAL
             IsAdmin = u.IsAdmin,
             CreatedAt = u.CreatedAt,
             UpdatedAt = u.UpdatedAt,
-            Address = string.Join(", ", new[] { u.Address?.HouseNo, u.Address?.Locality, u.Address?.Landmark, u.Address?.City, u.Address?.District, u.Address?.Pincode, u.Address?.State }.Where(x => !string.IsNullOrWhiteSpace(x)))
+            Address = string.Join(", ", new[] { u.Address?.HouseNo, u.Address?.Locality, u.Address?.Landmark, u.Address?.City, u.Address?.District, u.Address?.Pincode, u.Address?.State }.Where(x => !string.IsNullOrWhiteSpace(x))),
+
+            HouseNo = u.Address?.HouseNo,
+            Locality = u.Address?.Locality,
+            Landmark = u.Address?.Landmark,
+            City = u.Address?.City,
+            District = u.Address?.District,
+            Pincode = u.Address?.Pincode,
+            State = u.Address?.State
         }).ToList();
+
     }
 
     public string UpdateFlags(int id, UpdateFlagsDto dto)
@@ -168,14 +177,21 @@ public class UserBAL
             user.ProfilePic = _imageFal.SaveImage(dto.ProfilePic);
         }
 
-        if (user.Address == null) user.Address = new Address();
-        user.Address.HouseNo = dto.HouseNo ?? user.Address.HouseNo;
-        user.Address.Locality = dto.Locality ?? user.Address.Locality;
-        user.Address.Landmark = dto.Landmark ?? user.Address.Landmark;
-        user.Address.City = dto.City ?? user.Address.City;
-        user.Address.District = dto.District ?? user.Address.District;
-        user.Address.Pincode = dto.Pincode ?? user.Address.Pincode;
-        user.Address.State = dto.State ?? user.Address.State;
+        //if (user.Address == null) user.Address = new Address();
+        //user.Address.HouseNo = dto.HouseNo ?? user.Address.HouseNo;
+        //user.Address.Locality = dto.Locality ?? user.Address.Locality;
+        //user.Address.Landmark = dto.Landmark ?? user.Address.Landmark;
+        //user.Address.City = dto.City ?? user.Address.City;
+        //user.Address.District = dto.District ?? user.Address.District;
+        //user.Address.Pincode = dto.Pincode ?? user.Address.Pincode;
+        //user.Address.State = dto.State ?? user.Address.State;
+        if (!string.IsNullOrWhiteSpace(dto.HouseNo)) user.Address.HouseNo = dto.HouseNo;
+        if (!string.IsNullOrWhiteSpace(dto.Locality)) user.Address.Locality = dto.Locality;
+        if (!string.IsNullOrWhiteSpace(dto.Landmark)) user.Address.Landmark = dto.Landmark;
+        if (!string.IsNullOrWhiteSpace(dto.City)) user.Address.City = dto.City;
+        if (!string.IsNullOrWhiteSpace(dto.District)) user.Address.District = dto.District;
+        if (!string.IsNullOrWhiteSpace(dto.Pincode)) user.Address.Pincode = dto.Pincode;
+        if (!string.IsNullOrWhiteSpace(dto.State)) user.Address.State = dto.State;
 
         user.UpdatedAt = DateTimeOffset.Now;
         return _userDal.UpdateUser(user) ? "User updated successfully" : "User not found";
