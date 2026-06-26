@@ -4,8 +4,8 @@ using CulinaryCart.CulinaryCartDAL.Repositories;
 using CulinaryCart.CulinaryFAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Configuration;
 using System.IdentityModel.Tokens.Jwt;
-using System.Runtime.ConstrainedExecution;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -15,34 +15,29 @@ public class UserBAL
 {
     private readonly UserDAL _userDal;
     private readonly IImageFAL _imageFal;
+    private readonly IConfiguration _configuration;
 
-    public UserBAL(UserDAL userDal, IImageFAL imageFal)
+    //Injected IConfiguration inside the constructor block
+    public UserBAL(UserDAL userDal, IImageFAL imageFal, IConfiguration configuration)
     {
         _userDal = userDal;
         _imageFal = imageFal;
+        _configuration = configuration;
     }
 
     public string Signup(SignupDto Dto)
     {
-        // Check if email already exists
         var existingUser = _userDal.GetByEmail(Dto.Email);
-        if (existingUser != null)
-        {
-            return "User already exists";
-        }
+        if (existingUser != null) return "User already exists";
 
-        // Validate password
         if (!IsValidPassword(Dto.Password))
         {
             return "Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.";
         }
 
-        // Hash password 
         string hashedPassword = HashPassword(Dto.Password);
-
         var istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
         var nowIst = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, istZone);
-
 
         var newUser = new User
         {
@@ -54,8 +49,7 @@ public class UserBAL
             IsAdmin = false,
         };
 
-        var result = _userDal.Add(newUser);
-        return result;
+        return _userDal.Add(newUser);
     }
 
     private bool IsValidPassword(string password)
@@ -64,12 +58,9 @@ public class UserBAL
         var hasLower = new Regex(@"[a-z]+");
         var hasDigit = new Regex(@"\d+");
         var hasSpecial = new Regex(@"[\W]+");
-        return password.Length >= 8 &&
-               hasUpper.IsMatch(password) &&
-               hasLower.IsMatch(password) &&
-               hasDigit.IsMatch(password) &&
-               hasSpecial.IsMatch(password);
+        return password.Length >= 8 && hasUpper.IsMatch(password) && hasLower.IsMatch(password) && hasDigit.IsMatch(password) && hasSpecial.IsMatch(password);
     }
+
     private string HashPassword(string password)
     {
         using (var sha256 = SHA256.Create())
@@ -80,6 +71,7 @@ public class UserBAL
         }
     }
 
+    //Generates token using dynamic appsettings parameters safely
     public Loginresponse? Loginresponse(string email, string password)
     {
         var user = _userDal.GetByEmail(email);
@@ -88,41 +80,38 @@ public class UserBAL
         string hashedPassword = HashPassword(password);
         if (user.PasswordHash != hashedPassword) return null;
 
-        var claims = new[]       // <-- added 24-06
-       {
+        var claims = new[]
+        {
             new Claim("UserId", user.UserId.ToString()),
             new Claim("EmailId", user.EmailId),
             new Claim("IsAdmin", user.IsAdmin.ToString())
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("your-secret-key"));
+        //Now mapping parameters directly from your secure AppSettings file!
+        var secretKey = _configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Secret Key missing from configurations.");
+        var issuer = _configuration["Jwt:Issuer"] ?? "CulinaryCartAPI";
+        var audience = _configuration["Jwt:Audience"] ?? "CulinaryCartAPI";
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        // Generate token (your existing logic)
-        //var token = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{email}:{DateTime.Now}"));
-         
-        var token = new JwtSecurityToken(      // <-- added 24-06
-            issuer: "your-app",
-            audience: "your-app",
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
             claims: claims,
             expires: DateTime.Now.AddHours(1),
             signingCredentials: creds
         );
 
-        // Return token + role info
         return new Loginresponse
         {
-            //Token = token,
-            //Email = user.EmailId,
-            //IsAdmin = user.IsAdmin
-            Token = new JwtSecurityTokenHandler().WriteToken(token),     // <-- added 24-06
+            Token = new JwtSecurityTokenHandler().WriteToken(token),
             UserId = user.UserId,
             Name = user.Name,
             Email = user.EmailId,
             PhoneNo = user.PhoneNo,
             ProfilePic = user.ProfilePic,
             IsAdmin = user.IsAdmin
-
         };
     }
 
@@ -140,19 +129,7 @@ public class UserBAL
             IsAdmin = u.IsAdmin,
             CreatedAt = u.CreatedAt,
             UpdatedAt = u.UpdatedAt,
-
-            // Flattened address string
-            Address = string.Join(", ",
-            new[] {
-                u.Address?.HouseNo,
-                u.Address?.Locality,
-                u.Address?.Landmark,
-                u.Address?.City,
-                u.Address?.District,
-                u.Address?.Pincode,
-                u.Address?.State
-            }.Where(x => !string.IsNullOrWhiteSpace(x))
-        )
+            Address = string.Join(", ", new[] { u.Address?.HouseNo, u.Address?.Locality, u.Address?.Landmark, u.Address?.City, u.Address?.District, u.Address?.Pincode, u.Address?.State }.Where(x => !string.IsNullOrWhiteSpace(x)))
         }).ToList();
     }
 
@@ -167,14 +144,13 @@ public class UserBAL
         var istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
         user.UpdatedAt = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, istZone);
 
-        var result = _userDal.UpdateUser(user);
-        return result ? "Flags updated successfully" : "User not found";
+        return _userDal.UpdateUser(user) ? "Flags updated successfully" : "User not found";
     }
+
     public string UpdateUserProfile(int id, UpdateUserDto dto)
     {
         var user = _userDal.GetByIdWithAddress(id);
         if (user == null) return "User not found";
-
 
         if (!string.IsNullOrWhiteSpace(dto.Name)) user.Name = dto.Name;
         if (!string.IsNullOrWhiteSpace(dto.EmailId)) user.EmailId = dto.EmailId;
@@ -182,8 +158,7 @@ public class UserBAL
 
         if (!string.IsNullOrWhiteSpace(dto.Password))
         {
-            if (!IsValidPassword(dto.Password))
-                return "Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.";
+            if (!IsValidPassword(dto.Password)) return "Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.";
             user.PasswordHash = HashPassword(dto.Password);
         }
 
@@ -202,12 +177,8 @@ public class UserBAL
         user.Address.Pincode = dto.Pincode ?? user.Address.Pincode;
         user.Address.State = dto.State ?? user.Address.State;
 
-
-
         user.UpdatedAt = DateTimeOffset.Now;
-
-        var result = _userDal.UpdateUser(user);
-        return result ? "User updated successfully" : "User not found";
+        return _userDal.UpdateUser(user) ? "User updated successfully" : "User not found";
     }
 
     public string ChangePassword(int id, string oldPassword, string newPassword)
@@ -215,20 +186,14 @@ public class UserBAL
         var user = _userDal.GetById(id);
         if (user == null) return "User not found";
 
-        string oldHash = HashPassword(oldPassword);
-        if (user.PasswordHash != oldHash) return "Incorrect old password";
-
-        if (!IsValidPassword(newPassword))
-            return "Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.";
+        if (user.PasswordHash != HashPassword(oldPassword)) return "Incorrect old password";
+        if (!IsValidPassword(newPassword)) return "Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.";
 
         user.PasswordHash = HashPassword(newPassword);
         user.UpdatedAt = DateTimeOffset.Now;
 
-        var result = _userDal.UpdateUser(user);
-        return result ? "Password updated successfully" : "Error updating password";
+        return _userDal.UpdateUser(user) ? "Password updated successfully" : "Error updating password";
     }
-
-
 
     public string DeleteUser(int id)
     {
@@ -238,13 +203,3 @@ public class UserBAL
         return "User deleted successfully";
     }
 }
-
-
-
-
-
-
-
-
-
-

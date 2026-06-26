@@ -21,21 +21,25 @@ internal class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         // jwt authentication added
-        builder.Services.AddAuthentication("Bearer")       
-        .AddJwtBearer("Bearer", options =>
+        builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
         {
             options.TokenValidationParameters = new TokenValidationParameters
-           {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = "your-app",
-            ValidAudience = "your-app",
-            IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes("your-secret-key"))
-        };
-    });
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidAudience = builder.Configuration["Jwt:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Secret Key is missing from configuration."))) // Safely reads your secure 2026 key!
+            };
+        });
 
 
         builder.Services.AddCors(options =>
