@@ -1,13 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace CulinaryCart.CulinaryCartBAL.Models.DTO;
-
-public class ShowMenuFilterRequest
+namespace CulinaryCart.CulinaryCartBAL.Models.DTO
 {
-    [FromQuery] public string? CategoryName { get; set; }
-    [FromQuery] public string? DietaryPreferenceName { get; set; }
-
-    [FromQuery] public int PageNumber { get; set; } = 1;   
-    [FromQuery] public int PageSize { get; set; } = 10;
+    public class ShowMenuFilterRequest
+    {
+        
+        [FromQuery] public string[]? CategoryNames { get; set; }
+        [FromQuery] public string[]? DietaryPreferenceNames { get; set; }
+        [FromQuery] public int PageNumber { get; set; } = 1;
+        [FromQuery] public int PageSize { get; set; } = 10;
+    }
 }
+
 

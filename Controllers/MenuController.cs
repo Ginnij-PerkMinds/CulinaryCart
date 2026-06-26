@@ -26,15 +26,19 @@ namespace CulinaryCart.Controllers
 
 
         [HttpGet("ShowMenu")]
-        public IActionResult ShowMenu([FromQuery] ShowMenuFilterRequest filter) 
+        public IActionResult ShowMenu([FromQuery] ShowMenuFilterRequest filter)
         {
-            var items = _menuDal.GetAllMenuItems();
+            var items = _menuDal.GetAllMenuItems(); 
+            
+            if (filter.CategoryNames != null && filter.CategoryNames.Any())
+            {
+                items = items.Where(m => filter.CategoryNames.Contains(m.Category?.CategoryName)).ToList();
+            }
 
-            if (!string.IsNullOrEmpty(filter.CategoryName))
-                items = items.Where(m => m.Category?.CategoryName == filter.CategoryName).ToList();
-
-            if (!string.IsNullOrEmpty(filter.DietaryPreferenceName))
-                items = items.Where(m => m.DietaryPreference?.Diet == filter.DietaryPreferenceName).ToList();
+            if (filter.DietaryPreferenceNames != null && filter.DietaryPreferenceNames.Any())
+            {
+                items = items.Where(m => filter.DietaryPreferenceNames.Contains(m.DietaryPreference?.Diet)).ToList();
+            }
 
             //pagination
             var totalCount = items.Count;
@@ -52,7 +56,8 @@ namespace CulinaryCart.Controllers
                 Offers = m.Offers,
                 ImageUrl = m.ImageUrl,
                 CategoryName = m.Category?.CategoryName,
-                DietaryPreferenceName = m.DietaryPreference?.Diet})
+                DietaryPreferenceName = m.DietaryPreference?.Diet
+            })
                 .ToList();
 
             if (!response.Any())
@@ -120,17 +125,17 @@ namespace CulinaryCart.Controllers
         [Consumes("multipart/form-data")]
         public IActionResult UpdateMenu(
             int id, [FromForm] UpdateMenuRequest request)
-            //[FromForm] decimal? price,
-            //[FromForm] string? offers,
-            //IFormFile? imageFile,
-            //[FromForm] int? categoryId,
-            //[FromForm] int? dietId)
+        //[FromForm] decimal? price,
+        //[FromForm] string? offers,
+        //IFormFile? imageFile,
+        //[FromForm] int? categoryId,
+        //[FromForm] int? dietId)
         {
             var existing = _menuDal.GetItem(id);
             if (existing == null) return NotFound("Menu item not found");
 
             if (request.Price.HasValue) existing.Price = request.Price.Value;
-            if (!string.IsNullOrEmpty(request.Offers)) 
+            if (!string.IsNullOrEmpty(request.Offers))
                 existing.Offers = request.Offers;
 
             if (request.ImageFile != null)
@@ -169,5 +174,4 @@ namespace CulinaryCart.Controllers
             return Ok("Menu item deleted successfully");
         }
     }
- }
-
+}
