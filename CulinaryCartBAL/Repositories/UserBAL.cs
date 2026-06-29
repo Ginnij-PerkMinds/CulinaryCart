@@ -83,8 +83,8 @@ public class UserBAL
         var claims = new[]
         {
             new Claim("UserId", user.UserId.ToString()),
-            //new Claim("EmailId", user.EmailId),
-            //new Claim("IsAdmin", user.IsAdmin.ToString())
+            new Claim("EmailId", user.EmailId),
+            new Claim("IsAdmin", user.IsAdmin.ToString())
         };
 
         //Now mapping parameters directly from your secure AppSettings file!

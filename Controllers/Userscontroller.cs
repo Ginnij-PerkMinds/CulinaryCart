@@ -16,7 +16,7 @@ namespace CulinaryCart.Controllers
         {
             _userBal = userBal;
         }
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
         [HttpGet("GetAllUsers")]
         public IActionResult GetAllUsers()
         {
