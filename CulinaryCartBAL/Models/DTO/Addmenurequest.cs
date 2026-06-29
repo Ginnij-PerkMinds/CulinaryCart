@@ -10,6 +10,7 @@ public class AddMenuRequest
     [FromForm] public IFormFile ImageFile { get; set; }
     [FromForm] public string CategoryName { get; set; }
     [FromForm] public string DietaryPreferenceName { get; set; }
+
 }
 
 

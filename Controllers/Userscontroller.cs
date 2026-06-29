@@ -1,6 +1,7 @@
 ﻿using CulinaryCart.CulinaryCartBAL.Models.DTO;
 using CulinaryCart.CulinaryCartBAL.Repositories;
 using CulinaryCart.CulinaryFAL;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CulinaryCart.Controllers
@@ -15,14 +16,14 @@ namespace CulinaryCart.Controllers
         {
             _userBal = userBal;
         }
-
+        [Authorize(Roles = "Admin")]
         [HttpGet("GetAllUsers")]
         public IActionResult GetAllUsers()
         {
             var users = _userBal.GetAllUsers();
             return Ok(users);
         }
-
+        [Authorize]
         [HttpGet("GetUser/{id}")]
         public IActionResult GetUser(int id)
         {
@@ -30,7 +31,7 @@ namespace CulinaryCart.Controllers
             var user = users.FirstOrDefault(u => u.UserId == id);
             return user == null ? NotFound(new { Message = "User not found" }) : Ok(user);
         }
-
+        [Authorize]
         [HttpGet("me")]
         public IActionResult GetCurrentUser()
         {

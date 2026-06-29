@@ -83,8 +83,8 @@ public class UserBAL
         var claims = new[]
         {
             new Claim("UserId", user.UserId.ToString()),
-            new Claim("EmailId", user.EmailId),
-            new Claim("IsAdmin", user.IsAdmin.ToString())
+            //new Claim("EmailId", user.EmailId),
+            //new Claim("IsAdmin", user.IsAdmin.ToString())
         };
 
         //Now mapping parameters directly from your secure AppSettings file!
@@ -114,6 +114,7 @@ public class UserBAL
             IsAdmin = user.IsAdmin
         };
     }
+
 
     public List<UserDto> GetAllUsers()
     {
@@ -218,4 +219,14 @@ public class UserBAL
         _userDal.Delete(user);
         return "User deleted successfully";
     }
+
+    public string Logout(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return "Invalid token";
+
+        var revoked = _userDal.RevokeToken(token);
+        return revoked ? "Logout successful" : "Logout failed";
+    }
+
 }

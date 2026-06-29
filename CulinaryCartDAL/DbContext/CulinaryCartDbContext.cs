@@ -14,6 +14,8 @@ public class CulinaryCartDbContext : DbContext
     public DbSet<CartItem> CartItems { get; set; }
     public DbSet<User> Users { get; set; }   //added for user management
     public DbSet<Address> Address { get; set; }    // Address management
+    public DbSet<RevokedToken> RevokedTokens { get; set; }    //logout
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -58,14 +58,25 @@ namespace CulinaryCart.Controllers
                 user = new
                 {
                     userId = result.UserId,
-                    name = result.Name,
-                    emailId = result.Email,
-                    phoneNo = result.PhoneNo,
-                    profilePic = result.ProfilePic,
-                    isAdmin = result.IsAdmin
+                    //name = result.Name,
+                    //emailId = result.Email,
+                    //phoneNo = result.PhoneNo,
+                    //profilePic = result.ProfilePic,
+                    //isAdmin = result.IsAdmin
                 }
             });
-        }        
+        }
+
+        [HttpPost("Logout")]
+        public IActionResult Logout([FromBody] LogoutRequest request)
+        {
+            var result = _userBal.Logout(request.Token);
+            if (result == "Logout successful")
+                return Ok(new { Message = result });
+
+            return BadRequest(result);
+        }
+
     }
 }
 

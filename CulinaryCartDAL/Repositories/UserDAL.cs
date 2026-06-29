@@ -68,6 +68,22 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             _context.Users.Remove(user);
             _context.SaveChanges();
         }
+
+        public bool RevokeToken(string token)
+        {
+            var revoked = new RevokedToken
+            {
+                Token = token,
+                RevokedAt = DateTime.UtcNow
+            };
+            _context.RevokedTokens.Add(revoked);
+            return _context.SaveChanges() > 0;
+        }
+
+        public bool IsTokenRevoked(string token)
+        {
+            return _context.RevokedTokens.Any(r => r.Token == token);
+        }
     }
 }
 
