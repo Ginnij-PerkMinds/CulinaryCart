@@ -12,8 +12,9 @@ public class TokenValidationMiddleware
     public async Task Invoke(HttpContext context, UserDAL userDal)
     {
         //  Allow public endpoints (login, signup, etc.)
-        if (context.Request.Path.StartsWithSegments("/api/Auth") ||
-            context.Request.Path.StartsWithSegments("/api/User/Signup"))
+        if (context.Request.Path.StartsWithSegments("/api/Auth/login") ||
+            context.Request.Path.StartsWithSegments("/api/User/Signup") ||
+            context.Request.Path.StartsWithSegments("/api/Auth/logout"))
         {
             await _next(context);
             return;
