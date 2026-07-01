@@ -8,5 +8,6 @@
     public string DietaryPreferenceName { get; set; } 
 
     public IFormFile? ImageFile { get; set; }
+    public bool? InStock { get; set; }
 }
 

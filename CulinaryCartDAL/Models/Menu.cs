@@ -18,5 +18,7 @@ namespace CulinaryCart.CulinaryCartDAL.Models
 
         public int DietId { get; set; }
         public DietaryPreference DietaryPreference { get; set; }
+
+        public bool InStock { get; set; } = true;
     }
 }

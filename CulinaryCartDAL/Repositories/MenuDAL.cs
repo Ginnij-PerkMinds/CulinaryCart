@@ -52,6 +52,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             existing.ImageUrl = menu.ImageUrl;
             existing.CategoryId = menu.CategoryId;
             existing.DietId = menu.DietId;
+            existing.InStock = menu.InStock;
 
             _db.SaveChanges();
             return true;

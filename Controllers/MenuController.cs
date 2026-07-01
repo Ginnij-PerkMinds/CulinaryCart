@@ -40,6 +40,11 @@ namespace CulinaryCart.Controllers
                 items = items.Where(m => filter.DietaryPreferenceNames.Contains(m.DietaryPreference?.Diet)).ToList();
             }
 
+            if (!User.IsInRole("Admin"))
+            {
+                items = items.Where(m => m.InStock).ToList();
+            }
+
             //pagination
             var totalCount = items.Count;
             var pagedItems = items
@@ -47,7 +52,6 @@ namespace CulinaryCart.Controllers
                 .Take(filter.PageSize)
                 .ToList();
 
-            //var response = items.Select(m => new MenuResponse
             var response = pagedItems.Select(m => new MenuResponse
             {
                 FoodItemID = m.FoodItemID,
@@ -56,7 +60,8 @@ namespace CulinaryCart.Controllers
                 Offers = m.Offers,
                 ImageUrl = m.ImageUrl,
                 CategoryName = m.Category?.CategoryName,
-                DietaryPreferenceName = m.DietaryPreference?.Diet
+                DietaryPreferenceName = m.DietaryPreference?.Diet,
+                InStock = m.InStock
             })
                 .ToList();
 
@@ -73,17 +78,10 @@ namespace CulinaryCart.Controllers
                 );
         }
 
-
         // Add new menu item
         [HttpPost("AddMenu")]
         [Consumes("multipart/form-data")]
         public IActionResult AddMenu(
-            //[FromForm] string foodItemName,
-            //[FromForm] decimal price,
-            //[FromForm] string offers,
-            //IFormFile imageFile,
-            //[FromForm] int categoryId,
-            //[FromForm] int dietId
             [FromForm] AddMenuRequest request
             )
         {
@@ -104,7 +102,8 @@ namespace CulinaryCart.Controllers
                 Offers = request.Offers,
                 ImageUrl = imagePath,
                 CategoryId = category.CategoryId,
-                DietId = diet.DietId
+                DietId = diet.DietId,
+                InStock = true
             };
 
             var added = _menuDal.AddItem(menuItem);
@@ -125,11 +124,6 @@ namespace CulinaryCart.Controllers
         [Consumes("multipart/form-data")]
         public IActionResult UpdateMenu(
             int id, [FromForm] UpdateMenuRequest request)
-        //[FromForm] decimal? price,
-        //[FromForm] string? offers,
-        //IFormFile? imageFile,
-        //[FromForm] int? categoryId,
-        //[FromForm] int? dietId)
         {
             var existing = _menuDal.GetItem(id);
             if (existing == null) return NotFound("Menu item not found");
@@ -162,17 +156,20 @@ namespace CulinaryCart.Controllers
 
             return Ok(new { Message = "Menu item updated successfully", Item = existing });
         }
+        // Toggle stock status
+        [HttpPut("ToggleStock/{id}")]
+        public IActionResult ToggleStock(int id, [FromBody] bool inStock)
+        {
+            var existing = _menuDal.GetItem(id);
+            if (existing == null) return NotFound("Menu item not found");
 
+            existing.InStock = inStock;
+            var success = _menuDal.UpdateItem(id, existing);
+            if (!success) return BadRequest("Stock update failed");
+
+            return Ok(new { Message = "Stock status updated", Item = existing });
+        }
         // Delete menu item
-        //[HttpDelete("DeleteMenu/{id}")]
-        //public IActionResult DeleteMenu(int id)
-        //{
-        //    var deleted = _menuDal.DeleteItem(id);
-        //    if (!deleted)
-        //        return NotFound("Menu item not found");
-
-        //    return Ok("Menu item deleted successfully");
-        //}
         [HttpDelete("DeleteMenu/{id}")]
         public IActionResult DeleteMenu(int id)
         {
@@ -182,5 +179,6 @@ namespace CulinaryCart.Controllers
 
             return Ok(new { success = true, message = "Menu item deleted successfully" });
         }
+
     }
 }

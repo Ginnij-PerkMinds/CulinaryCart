@@ -11,5 +11,6 @@ public class MenuResponse
     public string DietaryPreferenceName { get; set; }
     [FromForm] public int CategoryId { get; set; }
     [FromForm] public int DietId { get; set; }
+    public bool InStock { get; set; }
 }
 
