@@ -164,14 +164,23 @@ namespace CulinaryCart.Controllers
         }
 
         // Delete menu item
+        //[HttpDelete("DeleteMenu/{id}")]
+        //public IActionResult DeleteMenu(int id)
+        //{
+        //    var deleted = _menuDal.DeleteItem(id);
+        //    if (!deleted)
+        //        return NotFound("Menu item not found");
+
+        //    return Ok("Menu item deleted successfully");
+        //}
         [HttpDelete("DeleteMenu/{id}")]
         public IActionResult DeleteMenu(int id)
         {
             var deleted = _menuDal.DeleteItem(id);
             if (!deleted)
-                return NotFound("Menu item not found");
+                return NotFound(new { success = false, message = "Menu item not found" });
 
-            return Ok("Menu item deleted successfully");
+            return Ok(new { success = true, message = "Menu item deleted successfully" });
         }
     }
 }
