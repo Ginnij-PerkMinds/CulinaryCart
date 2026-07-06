@@ -46,6 +46,10 @@ public class CulinaryCartDbContext : DbContext
             .HasOne(m => m.DietaryPreference)
             .WithMany(d => d.MenuItems)
             .HasForeignKey(m => m.DietId);
+        
+        modelBuilder.Entity<Menu>()
+            .Property(m => m.RemainingQuantity)
+            .HasDefaultValue(50);
 
         // this things are added 
         modelBuilder.Entity<User>()
@@ -54,7 +58,7 @@ public class CulinaryCartDbContext : DbContext
               .HasForeignKey<Address>(a => a.UserId)
               .OnDelete(DeleteBehavior.Cascade);
 
-        // ✅ Unique Email constraint
+        // Unique Email constraint
         modelBuilder.Entity<User>()
             .HasIndex(u => u.EmailId)
             .IsUnique();

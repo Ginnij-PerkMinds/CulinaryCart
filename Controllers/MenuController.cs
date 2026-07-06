@@ -4,6 +4,7 @@ using CulinaryCart.CulinaryCartDAL.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using CulinaryCart.CulinaryCartBAL.Models.DTO;
+using CulinaryCart.CulinaryCartBAL.Constants;
 
 namespace CulinaryCart.Controllers
 {
@@ -61,12 +62,13 @@ namespace CulinaryCart.Controllers
                 ImageUrl = m.ImageUrl,
                 CategoryName = m.Category?.CategoryName,
                 DietaryPreferenceName = m.DietaryPreference?.Diet,
-                InStock = m.InStock
+                InStock = m.InStock,
+                RemainingQuantity = m.RemainingQuantity
             })
                 .ToList();
 
             if (!response.Any())
-                return Ok(new { Message = "No menu items available" });
+                return Ok(new { Message = CulinaryCartConstants.Messages.NoMenuItemsAvailable });
 
             return Ok(new
             {
@@ -87,11 +89,11 @@ namespace CulinaryCart.Controllers
         {
             var category = _categoryDal.GetAllCategories()
                 .FirstOrDefault(c => c.CategoryName == request.CategoryName);
-            if (category == null) return BadRequest("Invalid categoryName");
+            if (category == null) return BadRequest(CulinaryCartConstants.Messages.InvalidCategoryName);
 
             var diet = _dietDal.GetAllDietPreferences()
                 .FirstOrDefault(d => d.Diet == request.DietaryPreferenceName);
-            if (diet == null) return BadRequest("Invalid dietaryPreferenceName");
+            if (diet == null) return BadRequest(CulinaryCartConstants.Messages.InvalidDietaryPreferenceName);
 
             var imagePath = _imageFal.SaveImage(request.ImageFile);
 
@@ -103,11 +105,12 @@ namespace CulinaryCart.Controllers
                 ImageUrl = imagePath,
                 CategoryId = category.CategoryId,
                 DietId = diet.DietId,
+                RemainingQuantity = 50, // Default quantity
                 InStock = true
             };
 
             var added = _menuDal.AddItem(menuItem);
-            return Ok(new { Message = "Menu item added successfully", Item = added });
+            return Ok(new { Message = CulinaryCartConstants.Messages.MenuItemAdded, Item = added });
         }
 
         // Get menu item by ID
@@ -115,7 +118,7 @@ namespace CulinaryCart.Controllers
         public IActionResult GetMenu(int id)
         {
             var menuItem = _menuDal.GetItem(id);
-            if (menuItem == null) return NotFound("Menu item not found");
+            if (menuItem == null) return NotFound(CulinaryCartConstants.Messages.MenuItemNotFound);
 
             return Ok(menuItem);
         }
@@ -126,7 +129,7 @@ namespace CulinaryCart.Controllers
             int id, [FromForm] UpdateMenuRequest request)
         {
             var existing = _menuDal.GetItem(id);
-            if (existing == null) return NotFound("Menu item not found");
+            if (existing == null) return NotFound(CulinaryCartConstants.Messages.MenuItemNotFound);
 
             if (request.Price.HasValue) existing.Price = request.Price.Value;
             if (!string.IsNullOrEmpty(request.Offers))
@@ -139,7 +142,7 @@ namespace CulinaryCart.Controllers
             {
                 var category = _categoryDal.GetAllCategories()
                     .FirstOrDefault(c => c.CategoryName == request.CategoryName);
-                if (category == null) return BadRequest("Invalid categoryName");
+                if (category == null) return BadRequest(CulinaryCartConstants.Messages.InvalidCategoryName);
                 existing.CategoryId = category.CategoryId;
             }
 
@@ -147,27 +150,27 @@ namespace CulinaryCart.Controllers
             {
                 var diet = _dietDal.GetAllDietPreferences()
                     .FirstOrDefault(d => d.Diet == request.DietaryPreferenceName);
-                if (diet == null) return BadRequest("Invalid dietaryPreferenceName");
+                if (diet == null) return BadRequest(CulinaryCartConstants.Messages.InvalidDietaryPreferenceName);
                 existing.DietId = diet.DietId;
             }
 
             var success = _menuDal.UpdateItem(id, existing);
-            if (!success) return BadRequest("Update failed");
+            if (!success) return BadRequest(CulinaryCartConstants.Messages.MenuItemUpdateFailed);
 
-            return Ok(new { Message = "Menu item updated successfully", Item = existing });
+            return Ok(new { Message = CulinaryCartConstants.Messages.MenuItemUpdated, Item = existing });
         }
         // Toggle stock status
         [HttpPut("ToggleStock/{id}")]
         public IActionResult ToggleStock(int id, [FromBody] bool inStock)
         {
             var existing = _menuDal.GetItem(id);
-            if (existing == null) return NotFound("Menu item not found");
+            if (existing == null) return NotFound(CulinaryCartConstants.Messages.MenuItemNotFound);
 
             existing.InStock = inStock;
             var success = _menuDal.UpdateItem(id, existing);
-            if (!success) return BadRequest("Stock update failed");
+            if (!success) return BadRequest(CulinaryCartConstants.Messages.StockUpdateFailed);
 
-            return Ok(new { Message = "Stock status updated", Item = existing });
+            return Ok(new { Message = CulinaryCartConstants.Messages.StockUpdateSuccessful, Item = existing });
         }
         // Delete menu item
         [HttpDelete("DeleteMenu/{id}")]
@@ -175,9 +178,9 @@ namespace CulinaryCart.Controllers
         {
             var deleted = _menuDal.DeleteItem(id);
             if (!deleted)
-                return NotFound(new { success = false, message = "Menu item not found" });
+                return NotFound(new { success = false, message = CulinaryCartConstants.Messages.MenuItemNotFound });
 
-            return Ok(new { success = true, message = "Menu item deleted successfully" });
+            return Ok(new { success = true, message = CulinaryCartConstants.Messages.MenuItemDeleted });
         }
 
     }

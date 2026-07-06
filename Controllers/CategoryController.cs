@@ -3,6 +3,7 @@ using CulinaryCart.CulinaryCartDAL.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using CulinaryCartBAL.Models.DTO;
+using CulinaryCart.CulinaryCartBAL.Constants;
 
 namespace CulinaryCart.Controllers
 {
@@ -30,12 +31,12 @@ namespace CulinaryCart.Controllers
         public IActionResult AddCategory([FromQuery] string categoryName)
         {
             if (string.IsNullOrWhiteSpace(categoryName))
-                return BadRequest("Category name is required.");
+                return BadRequest(CulinaryCartConstants.Messages.CategoryNameRequired);
 
             // checking duplicates
             var existing = _categoryDal.GetByName(categoryName);
             if (existing != null)
-                return Conflict("Already in DB"); 
+                return Conflict(CulinaryCartConstants.Messages.AlreadyInDB);
 
             var category = new Category
             {
@@ -43,7 +44,7 @@ namespace CulinaryCart.Controllers
             };
 
             _categoryDal.AddCategory(category);
-            return Ok("Category added successfully.");
+            return Ok(CulinaryCartConstants.Messages.CategoryAdded);
         }
 
         // Get category by ID
@@ -51,7 +52,7 @@ namespace CulinaryCart.Controllers
         public IActionResult GetCategory(int id)
         {
             var category = _categoryDal.GetById(id);
-            if (category == null) return NotFound("Category not found");
+            if (category == null) return NotFound(CulinaryCartConstants.Messages.CategoryNotFound);
 
             return Ok(category); 
         }
@@ -63,17 +64,16 @@ namespace CulinaryCart.Controllers
         {
             
             if (string.IsNullOrWhiteSpace(request.CategoryName))
-                return BadRequest("New category name is required.");
+                return BadRequest(CulinaryCartConstants.Messages.CategoryUpdateNameRequired);
 
             var category = _categoryDal.GetById(id);
-            if (category == null) return NotFound("Category not found");
-
+            if (category == null) return NotFound(CulinaryCartConstants.Messages.CategoryNotFound);
 
             var updated = _categoryDal.UpdateCategory(id, request.CategoryName);
             if (!updated)
-                return BadRequest("Update failed");
+                return BadRequest(CulinaryCartConstants.Messages.CategoryUpdateFailed);
 
-            return Ok("Category updated successfully.");
+            return Ok(CulinaryCartConstants.Messages.CategoryUpdated);
         }
 
         // Delete category
@@ -81,9 +81,9 @@ namespace CulinaryCart.Controllers
         public IActionResult DeleteCategory(int id)
         {
             var success = _categoryDal.DeleteCategory(id);
-            if (!success) return NotFound("Category not found");
+            if (!success) return NotFound(CulinaryCartConstants.Messages.CategoryNotFound);
 
-            return Ok("Category deleted successfully.");
+            return Ok(CulinaryCartConstants.Messages.CategoryDeleted);
 
         }
     }

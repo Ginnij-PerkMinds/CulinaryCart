@@ -53,6 +53,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             existing.CategoryId = menu.CategoryId;
             existing.DietId = menu.DietId;
             existing.InStock = menu.InStock;
+            existing.RemainingQuantity = menu.RemainingQuantity;
 
             _db.SaveChanges();
             return true;
@@ -67,6 +68,11 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             _db.Menu.Remove(existing);
             _db.SaveChanges();
             return true;
+        }
+        public void Update(Menu menu)
+        {
+            _db.Menu.Update(menu);
+            _db.SaveChanges();
         }
 
         // Filter + Pagination

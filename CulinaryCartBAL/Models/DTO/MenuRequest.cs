@@ -10,6 +10,7 @@
         public string DietaryPreferenceName { get; set; }
 
         public IFormFile ImageFile { get; set; }
+        public int RemainingQuantity { get; set; }
     }
 }
 

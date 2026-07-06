@@ -1,4 +1,5 @@
-﻿using CulinaryCart.CulinaryCartBAL.Models.DTO;
+﻿using CulinaryCart.CulinaryCartBAL.Constants;
+using CulinaryCart.CulinaryCartBAL.Models.DTO;
 using CulinaryCart.CulinaryCartBAL.Repositories;
 using CulinaryCart.CulinaryFAL;
 using Microsoft.AspNetCore.Authorization;
@@ -29,7 +30,7 @@ namespace CulinaryCart.Controllers
         {
             var users = _userBal.GetAllUsers();
             var user = users.FirstOrDefault(u => u.UserId == id);
-            return user == null ? NotFound(new { Message = "User not found" }) : Ok(user);
+            return user == null ? NotFound(new { Message = CulinaryCartConstants.Messages.UserNotFound }) : Ok(user);
         }
         [Authorize]
         [HttpGet("me")]
@@ -44,7 +45,7 @@ namespace CulinaryCart.Controllers
             var user = users.FirstOrDefault(u => u.UserId == userId);
 
             return user == null
-                ? NotFound(new { Message = "User not found" })
+                ? NotFound(new { Message = CulinaryCartConstants.Messages.UserNotFound })
                 : Ok(user);
         }
 
@@ -54,7 +55,7 @@ namespace CulinaryCart.Controllers
         public IActionResult UpdateFlags(int id, [FromBody] UpdateFlagsDto dto)
         {
             var result = _userBal.UpdateFlags(id, dto);
-            return result == "User not found"
+            return result == CulinaryCartConstants.Messages.UserNotFound
                 ? NotFound(new { Message = result })
                 : Ok(new { Message = result });
         }
@@ -66,7 +67,7 @@ namespace CulinaryCart.Controllers
         {
             var result = _userBal.UpdateUserProfile(id, dto);
             if (result.Contains("exists")) return Conflict(new { Message = result });    // <-- added 
-            return result == "User not found"
+            return result == CulinaryCartConstants.Messages.UserNotFound
                 ? NotFound(new { Message = result })
                 : Ok(new { Message = result });
         }
@@ -76,8 +77,8 @@ namespace CulinaryCart.Controllers
         public IActionResult ChangePassword(int id, [FromBody] ChangePasswordDto dto)
         {
             var result = _userBal.ChangePassword(id, dto.OldPassword, dto.NewPassword);
-            if (result == "User not found") return NotFound(new { Message = result });
-            if (result == "Incorrect old password") return BadRequest(new { Message = result });
+            if (result == CulinaryCartConstants.Messages.UserNotFound) return NotFound(new { Message = result });
+            if (result == CulinaryCartConstants.Messages.IncorrectOldPassword) return BadRequest(new { Message = result });
             if (result.StartsWith("Password must")) return BadRequest(new { Message = result });
             return Ok(new { Message = result });
         }
@@ -86,7 +87,7 @@ namespace CulinaryCart.Controllers
         public IActionResult DeleteUser(int id)
         {
             var result = _userBal.DeleteUser(id);
-            return result == "User not found" ? NotFound(new { Message = result }) : Ok(new { Message = result });
+            return result == CulinaryCartConstants.Messages.UserNotFound ? NotFound(new { Message = result }) : Ok(new { Message = result });
         }
     }
 }

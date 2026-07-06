@@ -10,6 +10,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using CulinaryCart.CulinaryCartBAL.Constants;
 
 public class UserBAL
 {
@@ -28,11 +29,11 @@ public class UserBAL
     public string Signup(SignupDto Dto)
     {
         var existingUser = _userDal.GetByEmail(Dto.Email);
-        if (existingUser != null) return "User already exists";
+        if (existingUser != null) return CulinaryCartConstants.Messages.UserAlreadyExists;
 
         if (!IsValidPassword(Dto.Password))
         {
-            return "Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.";
+            return CulinaryCartConstants.Messages.PasswordRequirements;
         }
 
         string hashedPassword = HashPassword(Dto.Password);
@@ -146,7 +147,7 @@ public class UserBAL
     public string UpdateFlags(int id, UpdateFlagsDto dto)
     {
         var user = _userDal.GetById(id);
-        if (user == null) return "User not found";
+        if (user == null) return CulinaryCartConstants.Messages.UserNotFound;
 
         user.IsActive = dto.IsActive;
         user.IsAdmin = dto.IsAdmin;
@@ -154,13 +155,13 @@ public class UserBAL
         var istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
         user.UpdatedAt = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, istZone);
 
-        return _userDal.UpdateUser(user) ? "Flags updated successfully" : "User not found";
+        return _userDal.UpdateUser(user) ? CulinaryCartConstants.Messages.FlagsUpdated : CulinaryCartConstants.Messages.UserNotFound;
     }
 
     public string UpdateUserProfile(int id, UpdateUserDto dto)
     {
         var user = _userDal.GetByIdWithAddress(id);
-        if (user == null) return "User not found";
+        if (user == null) return CulinaryCartConstants.Messages.UserNotFound;
 
         if (!string.IsNullOrWhiteSpace(dto.Name)) user.Name = dto.Name;
         if (!string.IsNullOrWhiteSpace(dto.EmailId)) user.EmailId = dto.EmailId;
@@ -168,7 +169,7 @@ public class UserBAL
 
         if (!string.IsNullOrWhiteSpace(dto.Password))
         {
-            if (!IsValidPassword(dto.Password)) return "Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.";
+            if (!IsValidPassword(dto.Password)) return CulinaryCartConstants.Messages.PasswordUpdateFailed;
             user.PasswordHash = HashPassword(dto.Password);
         }
 
@@ -178,14 +179,6 @@ public class UserBAL
             user.ProfilePic = _imageFal.SaveImage(dto.ProfilePic);
         }
 
-        //if (user.Address == null) user.Address = new Address();
-        //user.Address.HouseNo = dto.HouseNo ?? user.Address.HouseNo;
-        //user.Address.Locality = dto.Locality ?? user.Address.Locality;
-        //user.Address.Landmark = dto.Landmark ?? user.Address.Landmark;
-        //user.Address.City = dto.City ?? user.Address.City;
-        //user.Address.District = dto.District ?? user.Address.District;
-        //user.Address.Pincode = dto.Pincode ?? user.Address.Pincode;
-        //user.Address.State = dto.State ?? user.Address.State;
         if (!string.IsNullOrWhiteSpace(dto.HouseNo)) user.Address.HouseNo = dto.HouseNo;
         if (!string.IsNullOrWhiteSpace(dto.Locality)) user.Address.Locality = dto.Locality;
         if (!string.IsNullOrWhiteSpace(dto.Landmark)) user.Address.Landmark = dto.Landmark;
@@ -195,38 +188,38 @@ public class UserBAL
         if (!string.IsNullOrWhiteSpace(dto.State)) user.Address.State = dto.State;
 
         user.UpdatedAt = DateTimeOffset.Now;
-        return _userDal.UpdateUser(user) ? "User updated successfully" : "User not found";
+        return _userDal.UpdateUser(user) ? CulinaryCartConstants.Messages.UserUpdated : CulinaryCartConstants.Messages.UserNotFound;
     }
 
     public string ChangePassword(int id, string oldPassword, string newPassword)
     {
         var user = _userDal.GetById(id);
-        if (user == null) return "User not found";
+        if (user == null) return CulinaryCartConstants.Messages.UserNotFound;
 
-        if (user.PasswordHash != HashPassword(oldPassword)) return "Incorrect old password";
-        if (!IsValidPassword(newPassword)) return "Password must be at least 8 characters, include uppercase, lowercase, digit, and special character.";
+        if (user.PasswordHash != HashPassword(oldPassword)) return CulinaryCartConstants.Messages.IncorrectOldPassword;
+        if (!IsValidPassword(newPassword)) return CulinaryCartConstants.Messages.PasswordUpdateFailed;
 
         user.PasswordHash = HashPassword(newPassword);
         user.UpdatedAt = DateTimeOffset.Now;
 
-        return _userDal.UpdateUser(user) ? "Password updated successfully" : "Error updating password";
+        return _userDal.UpdateUser(user) ? CulinaryCartConstants.Messages.PasswordUpdateSuccessful : CulinaryCartConstants.Messages.PasswordUpdateFailed;
     }
 
     public string DeleteUser(int id)
     {
         var user = _userDal.GetById(id);
-        if (user == null) return "User not found";
+        if (user == null) return CulinaryCartConstants.Messages.UserNotFound;
         _userDal.Delete(user);
-        return "User deleted successfully";
+        return CulinaryCartConstants.Messages.UserDeleted;
     }
 
     public string Logout(string token)
     {
         if (string.IsNullOrWhiteSpace(token))
-            return "Invalid token";
+            return CulinaryCartConstants.Messages.InvalidToken;
 
         var revoked = _userDal.RevokeToken(token);
-        return revoked ? "Logout successful" : "Logout failed";
+        return revoked ? CulinaryCartConstants.Messages.LogoutSuccessful : CulinaryCartConstants.Messages.LogoutFailed;
     }
 
 }

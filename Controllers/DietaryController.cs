@@ -2,6 +2,7 @@
 using CulinaryCart.CulinaryCartDAL.Models;
 using Microsoft.AspNetCore.Mvc;
 using CulinaryCart.CulinaryCartBAL.Models.DTO;
+using CulinaryCart.CulinaryCartBAL.Constants;
 
 namespace CulinaryCart.Controllers
 {
@@ -27,11 +28,11 @@ namespace CulinaryCart.Controllers
         public IActionResult AddDietaryPreference([FromQuery] string dietName)
         {
             if (string.IsNullOrWhiteSpace(dietName))
-                return BadRequest("Dietary preference name is required.");
+                return BadRequest(CulinaryCartConstants.Messages.DietaryPreferenceNameRequired);
 
             var existing = _dietDal.GetByName(dietName);
             if (existing != null)
-                return Conflict("Already in DB");
+                return Conflict(CulinaryCartConstants.Messages.AlreadyInDB);
 
             var diet = new DietaryPreference
             {
@@ -39,7 +40,7 @@ namespace CulinaryCart.Controllers
             };
 
             _dietDal.AddDietPreference(diet);
-            return Ok("Dietary preference added successfully.");
+            return Ok(CulinaryCartConstants.Messages.DietaryPreferenceAdded);
         }
 
         // Get dietary preference by ID
@@ -47,7 +48,7 @@ namespace CulinaryCart.Controllers
         public IActionResult GetDietaryPreference(int id)
         {
             var diet = _dietDal.GetById(id);
-            if (diet == null) return NotFound("Dietary preference not found");
+            if (diet == null) return NotFound(CulinaryCartConstants.Messages.DietaryPreferenceNotFound);
 
             return Ok(diet);
         }
@@ -58,17 +59,17 @@ namespace CulinaryCart.Controllers
         public IActionResult UpdateDietaryPreference(int id, [FromBody] DietUpdateRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Diet))
-                return BadRequest("New dietary preference name is required.");
+                return BadRequest(CulinaryCartConstants.Messages.DietaryPreferenceNameRequired);
 
             var diet = _dietDal.GetById(id);
             if (diet == null)
-                return NotFound("Dietary preference not found");
+                return NotFound(CulinaryCartConstants.Messages.DietaryPreferenceNotFound);
 
             var updated = _dietDal.UpdateDietPreference(id, request.Diet);
             if (!updated)
-                return BadRequest("Update failed");
+                return BadRequest(CulinaryCartConstants.Messages.DietaryPreferenceUpdateFailed);
 
-            return Ok("Dietary preference updated successfully.");
+            return Ok(CulinaryCartConstants.Messages.DietaryPreferenceUpdated);
         }
 
 
@@ -77,9 +78,9 @@ namespace CulinaryCart.Controllers
             public IActionResult DeleteDietaryPreference(int id)
             {
                 var success = _dietDal.DeleteDietPreference(id);
-                if (!success) return NotFound("Dietary preference not found");
+                if (!success) return NotFound(CulinaryCartConstants.Messages.DietaryPreferenceNotFound);
 
-                return Ok("Dietary preference deleted successfully.");
+                return Ok(CulinaryCartConstants.Messages.DietaryPreferenceDeleted);
             }
         }
     }

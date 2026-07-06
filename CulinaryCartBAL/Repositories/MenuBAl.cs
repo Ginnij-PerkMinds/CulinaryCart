@@ -3,6 +3,7 @@ using CulinaryCart.CulinaryFAL;
 using CulinaryCart.CulinaryCartDAL.Repositories;
 using CulinaryCart.CulinaryCartBAL.Models.DTO;
 using CulinaryCart.CulinaryCartDAL.Models;
+using CulinaryCart.CulinaryCartBAL.Constants;
 
 namespace CulinaryCart.CulinaryCartBAL.Repositories
 {
@@ -38,11 +39,11 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
         {
             var category = _categoryDal.GetByName(request.CategoryName);
             if (category == null) 
-                throw new System.Exception("Invalid category name");
+                throw new System.Exception(CulinaryCartConstants.Messages.InvalidCategoryName);
 
             var diet = _dietDal.GetByName(request.DietaryPreferenceName);
             if (diet == null) 
-                throw new System.Exception("Invalid dietary preference name");
+                throw new System.Exception(CulinaryCartConstants.Messages.InvalidDietaryPreferenceName);
 
             //save image and get path
             var imagePath = _imageFal.SaveImage(request.ImageFile);
@@ -54,7 +55,8 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 Offers = request.Offers,
                 ImageUrl = imagePath,
                 CategoryId = category.CategoryId,
-                DietId = diet.DietId
+                DietId = diet.DietId,
+                RemainingQuantity=50
             };
 
             return _menuDal.AddItem(menu);
@@ -84,7 +86,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             {
                 var category = _categoryDal.GetByName(request.CategoryName);
                 if (category == null)
-                    throw new Exception("Invalid category name");
+                    throw new Exception(CulinaryCartConstants.Messages.InvalidCategoryName);
                 existing.CategoryId = category.CategoryId;
             }
 
@@ -92,7 +94,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             {
                 var diet = _dietDal.GetByName(request.DietaryPreferenceName);
                 if (diet == null) 
-                    throw new Exception("Invalid dietary preference name");
+                    throw new Exception(CulinaryCartConstants.Messages.InvalidDietaryPreferenceName);
                 existing.DietId = diet.DietId;
             }
 

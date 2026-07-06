@@ -1,4 +1,5 @@
-﻿using CulinaryCart.CulinaryCartBAL.Models.DTO;
+﻿using CulinaryCart.CulinaryCartBAL.Constants;
+using CulinaryCart.CulinaryCartBAL.Models.DTO;
 using CulinaryCart.CulinaryCartBAL.Repositories;
 using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryFAL;
@@ -31,7 +32,7 @@ namespace CulinaryCart.Controllers
 
             var result = _userBal.Signup(Dto); 
 
-            if (result == "User already exists")
+            if (result == CulinaryCartConstants.Messages.UserAlreadyExists)
                 return Conflict(new { message = result });
 
             if (result.StartsWith("Password"))
@@ -47,14 +48,13 @@ namespace CulinaryCart.Controllers
             var result = _userBal.Loginresponse(dto.Email, dto.Password);
 
             if (result == null)
-                return Unauthorized(new { message = "Invalid email or password" });
+                return Unauthorized(new { message = CulinaryCartConstants.Messages.InvalidEmailOrPassword });
 
 
             return Ok(new
             {
-                //{ token = result, message = "Login successful" });
-                token = result.Token,                    // <-- added for jwt token
-                message = "Login successful",
+                token = result.Token,                    
+                message = CulinaryCartConstants.Messages.LoginSuccessful,
                 user = new
                 {
                     userId = result.UserId,
@@ -71,7 +71,7 @@ namespace CulinaryCart.Controllers
         public IActionResult Logout([FromBody] LogoutRequest request)
         {
             var result = _userBal.Logout(request.Token);
-            if (result == "Logout successful")
+            if (result == CulinaryCartConstants.Messages.LogoutSuccessful)
                 return Ok(new { Message = result });
 
             return BadRequest(result);

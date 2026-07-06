@@ -18,6 +18,13 @@ namespace CulinaryCart.Controllers
             _cartBal = cartBal;
             _menuDal = menuDal;
         }
+        private int GetUserIdFromToken()
+        {
+            var userIdClaim = User.FindFirst("userId");
+            if (userIdClaim == null)
+                throw new UnauthorizedAccessException(CulinaryCartConstants.Messages.UserIdClaimMissing);
+            return int.Parse(userIdClaim.Value);
+        }
 
         [HttpPost("add")]
         public IActionResult AddToCart(int foodItemId, int qty)
@@ -52,7 +59,7 @@ namespace CulinaryCart.Controllers
         [HttpDelete("delete/{foodItemId}")]
         public IActionResult DeleteCartItem(int foodItemId)
         {
-            var item = _menuDal.GetItem(foodItemId); // or _cartDal.GetItem
+            var item = _menuDal.GetItem(foodItemId); 
             if (item == null)
             {
                 return NotFound($"Cart item with ID {foodItemId} not found.");
@@ -70,11 +77,18 @@ namespace CulinaryCart.Controllers
 
             if (items == null || !items.Any())
             {
-                return Ok(new { Message = "Cart is empty" });
+                return Ok(new { Message = CulinaryCartConstants.Messages.CartIsEmpty });
             }
 
             return Ok(items);
         }
+        [HttpPost("checkout")]
+        public IActionResult Checkout()
+        {
+            _cartBal.Checkout();   
+            return Ok(new { Message = CulinaryCartConstants.Messages.CheckoutSuccessful });
+        }
+
 
     }
 

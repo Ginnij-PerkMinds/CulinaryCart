@@ -12,5 +12,6 @@ public class MenuResponse
     [FromForm] public int CategoryId { get; set; }
     [FromForm] public int DietId { get; set; }
     public bool InStock { get; set; }
+    public int RemainingQuantity { get; set; }
 }
 

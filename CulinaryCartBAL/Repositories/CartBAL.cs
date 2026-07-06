@@ -1,6 +1,7 @@
 ﻿using CulinaryCart.CulinaryCartBAL.Constants;
 using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryCartDAL.Repositories;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -137,20 +138,6 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 .Sum(h => h.FinalPrice);
         }
 
-        // Checkout (mark items as checked out)
-        public void Checkout()
-        {
-            var items = _orderHistoryDal.GetAll()
-                .Where(h => h.Status == CulinaryCartConstants.Status.InCart)
-                .ToList();
-
-            foreach (var item in items)
-            {
-                item.Status = CulinaryCartConstants.Status.CheckedOut;
-                _orderHistoryDal.Update(item);
-            }
-        }
-
         // Implemented: return cart items
         public IEnumerable<OrderHistory> GetCartItems()
         {
@@ -159,6 +146,39 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 .ToList();
         }
 
+        // Checkout
+        public void Checkout()
+        {
+            
+            var items = _orderHistoryDal.GetAll()
+                .Where(h =>  h.Status == CulinaryCartConstants.Status.InCart)
+                .ToList();
+
+            foreach (var item in items)
+            {
+                
+                var menuItem = _menuDal.GetItem(item.FoodItemID);
+                if (menuItem != null)
+                {
+                    
+                    menuItem.RemainingQuantity -= item.Quantity;
+
+                    
+                    if (menuItem.RemainingQuantity <= 0)
+                    {
+                        menuItem.RemainingQuantity = 0;
+                        menuItem.InStock = false; // auto toggle off
+                    }
+
+                   
+                    _menuDal.Update(menuItem);
+                }
+
+                
+                item.Status = CulinaryCartConstants.Status.CheckedOut;
+                _orderHistoryDal.Update(item);
+            }
+        }
 
     }
 }
