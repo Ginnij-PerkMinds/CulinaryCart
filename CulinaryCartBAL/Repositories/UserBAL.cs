@@ -1,29 +1,32 @@
-﻿using CulinaryCart.CulinaryCartBAL.Models.DTO;
+﻿using CulinaryCart.CulinaryCartBAL.Constants;
+using CulinaryCart.CulinaryCartBAL.Models.DTO;
+using CulinaryCart.CulinaryCartDAL.DbContext;
 using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryCartDAL.Repositories;
 using CulinaryCart.CulinaryFAL;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using CulinaryCart.CulinaryCartBAL.Constants;
 
 public class UserBAL
 {
     private readonly UserDAL _userDal;
     private readonly IImageFAL _imageFal;
     private readonly IConfiguration _configuration;
+    private readonly CulinaryCartDbContext _context;
 
     //Injected IConfiguration inside the constructor block
-    public UserBAL(UserDAL userDal, IImageFAL imageFal, IConfiguration configuration)
+    public UserBAL(UserDAL userDal, IImageFAL imageFal, IConfiguration configuration, CulinaryCartDbContext context)
     {
         _userDal = userDal;
         _imageFal = imageFal;
         _configuration = configuration;
+        _context = context;
     }
 
     public string Signup(SignupDto Dto)
@@ -211,6 +214,17 @@ public class UserBAL
         if (user == null) return CulinaryCartConstants.Messages.UserNotFound;
         _userDal.Delete(user);
         return CulinaryCartConstants.Messages.UserDeleted;
+    }
+    public UserStatsDto GetUserStats()
+    {
+        return new UserStatsDto
+        {
+            TotalUsers = _context.Users.Count(),
+            AdminUsers = _context.Users.Count(u => u.IsAdmin),
+            ActiveUsers = _context.Users.Count(u => u.IsActive),
+            TotalCustomers = _context.Users.Count(u => !u.IsAdmin),
+            ActiveCustomers = _context.Users.Count(u => !u.IsAdmin && u.IsActive)
+        };
     }
 
     public string Logout(string token)

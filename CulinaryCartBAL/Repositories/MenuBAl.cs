@@ -23,9 +23,24 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
         }
 
         // Show all menu items
-        public IEnumerable<Menu> ShowMenu()
+        //public IEnumerable<Menu> ShowMenu()
+        //{
+        //    return _menuDal.GetAllMenuItems();
+        //}
+        public IEnumerable<Menu> ShowMenu(string role)
         {
-            return _menuDal.GetAllMenuItems();
+            var allItems = _menuDal.GetAllMenuItems();
+
+            if (role == "Admin")
+            {
+                // Admins see everything
+                return allItems;
+            }
+            else
+            {
+                // Non-admins see only items that are in stock and have quantity
+                return allItems.Where(m => m.InStock && m.RemainingQuantity > 0);
+            }
         }
 
         // Get single menu item by ID
@@ -56,7 +71,8 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 ImageUrl = imagePath,
                 CategoryId = category.CategoryId,
                 DietId = diet.DietId,
-                RemainingQuantity=50
+                RemainingQuantity=50,
+                InStock = true
             };
 
             return _menuDal.AddItem(menu);
@@ -100,6 +116,9 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
 
             return _menuDal.UpdateItem(id, existing);
         }
+
+        public bool ToggleStock(int id, bool inStock) => _menuDal.ToggleStock(id, inStock);
+        public bool CheckoutItems(int id, int quantity) => _menuDal.CheckoutItems(id, quantity);
 
         // Delete menu item
         public bool DeleteMenu(int id)

@@ -1,10 +1,11 @@
-﻿using CulinaryCart.CulinaryCartDAL.Repositories;
-using CulinaryCart.CulinaryFAL;
+﻿using CulinaryCart.CulinaryCartBAL.Constants;
+using CulinaryCart.CulinaryCartBAL.Models.DTO;
+using CulinaryCart.CulinaryCartBAL.Repositories;
 using CulinaryCart.CulinaryCartDAL.Models;
+using CulinaryCart.CulinaryCartDAL.Repositories;
+using CulinaryCart.CulinaryFAL;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using CulinaryCart.CulinaryCartBAL.Models.DTO;
-using CulinaryCart.CulinaryCartBAL.Constants;
 
 namespace CulinaryCart.Controllers
 {
@@ -12,6 +13,7 @@ namespace CulinaryCart.Controllers
     [Route("api/[controller]")]
     public class MenuController : ControllerBase
     {
+
         private readonly MenuDAL _menuDal;
         private readonly CategoryDAL _categoryDal;
         private readonly DietDAL _dietDal;
@@ -29,6 +31,7 @@ namespace CulinaryCart.Controllers
         [HttpGet("ShowMenu")]
         public IActionResult ShowMenu([FromQuery] ShowMenuFilterRequest filter)
         {
+
             var items = _menuDal.GetAllMenuItems(); 
             
             if (filter.CategoryNames != null && filter.CategoryNames.Any())
@@ -41,10 +44,10 @@ namespace CulinaryCart.Controllers
                 items = items.Where(m => filter.DietaryPreferenceNames.Contains(m.DietaryPreference?.Diet)).ToList();
             }
 
-            if (!User.IsInRole("Admin"))
-            {
-                items = items.Where(m => m.InStock).ToList();
-            }
+            //if (!User.IsInRole("Admin"))
+            //{
+            //    items = items.Where(m => m.InStock).ToList();
+            //}
 
             //pagination
             var totalCount = items.Count;
@@ -163,14 +166,26 @@ namespace CulinaryCart.Controllers
         [HttpPut("ToggleStock/{id}")]
         public IActionResult ToggleStock(int id, [FromBody] bool inStock)
         {
-            var existing = _menuDal.GetItem(id);
-            if (existing == null) return NotFound(CulinaryCartConstants.Messages.MenuItemNotFound);
-
-            existing.InStock = inStock;
-            var success = _menuDal.UpdateItem(id, existing);
+            var success = _menuDal.ToggleStock(id, inStock);
             if (!success) return BadRequest(CulinaryCartConstants.Messages.StockUpdateFailed);
 
-            return Ok(new { Message = CulinaryCartConstants.Messages.StockUpdateSuccessful, Item = existing });
+            
+            var updatedItem = _menuDal.GetItem(id);
+            if (updatedItem == null) return BadRequest(CulinaryCartConstants.Messages.MenuItemNotFound);
+
+            return Ok(new { Message = CulinaryCartConstants.Messages.StockUpdateSuccessful, Item = updatedItem});
+        }
+
+        [HttpPut("Checkout/{id}")]
+        public IActionResult Checkout(int id, [FromBody] int quantity)
+        {
+            var success = _menuDal.CheckoutItems(id, quantity);
+            if (!success) return BadRequest("Checkout failed");
+
+            var updatedItem = _menuDal.GetItem(id);
+            if (updatedItem == null) return NotFound(CulinaryCartConstants.Messages.MenuItemNotFound);
+
+            return Ok(new { Message = "Stock update successful", Item = updatedItem });
         }
         // Delete menu item
         [HttpDelete("DeleteMenu/{id}")]
@@ -183,5 +198,37 @@ namespace CulinaryCart.Controllers
             return Ok(new { success = true, message = CulinaryCartConstants.Messages.MenuItemDeleted });
         }
 
+        [HttpGet("menu-stats")]
+        public IActionResult GetMenuStats()
+        {
+            var items = _menuDal.GetAllMenuItems();
+
+            var totalItems = items.Count;
+            var vegItems = items.Count(m => m.DietaryPreference?.Diet == "Veg");
+            var nonVegItems = items.Count(m => m.DietaryPreference?.Diet == "Non-Veg");
+            var veganItems = items.Count(m => m.DietaryPreference?.Diet == "Vegan");
+            var ketoItems = items.Count(m => m.DietaryPreference?.Diet == "Ketogenic");
+
+            var totalCategories = _categoryDal.GetAllCategories().Count();
+            var totalDietPreferences = _dietDal.GetAllDietPreferences().Count();
+
+            var categoryDistribution = items
+            .GroupBy(m => m.Category?.CategoryName)
+            .Select(g => new {CategoryName = g.Key ?? "Uncategorized",
+            ItemCount = g.Count()
+            }).ToList();
+
+            return Ok(new
+            {
+                TotalItems = totalItems,
+                VegItems = vegItems,
+                NonVegItems = nonVegItems,
+                VeganItems = veganItems,
+                KetoItems = ketoItems,
+                TotalCategories = totalCategories,
+                TotalDietPreferences = totalDietPreferences,
+                CategoryDistribution = categoryDistribution
+            });
+        }
     }
 }

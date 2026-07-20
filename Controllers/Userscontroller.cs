@@ -1,9 +1,12 @@
 ﻿using CulinaryCart.CulinaryCartBAL.Constants;
 using CulinaryCart.CulinaryCartBAL.Models.DTO;
 using CulinaryCart.CulinaryCartBAL.Repositories;
+using CulinaryCart.CulinaryCartDAL.DbContext;
 using CulinaryCart.CulinaryFAL;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace CulinaryCart.Controllers
 {
@@ -88,6 +91,13 @@ namespace CulinaryCart.Controllers
         {
             var result = _userBal.DeleteUser(id);
             return result == CulinaryCartConstants.Messages.UserNotFound ? NotFound(new { Message = result }) : Ok(new { Message = result });
+        }
+
+        [HttpGet("user-stats")]
+        public IActionResult GetUserStats()
+        {
+            var stats = _userBal.GetUserStats();
+            return Ok(stats);
         }
     }
 }

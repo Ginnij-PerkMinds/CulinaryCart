@@ -84,12 +84,6 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
         {
             return _context.RevokedTokens.Any(r => r.Token == token);
         }
+
     }
 }
-
-
-
-
-
-
-

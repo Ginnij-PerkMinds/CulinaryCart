@@ -59,6 +59,36 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             return true;
         }
 
+        // Toggle stock
+        public bool ToggleStock(int id, bool inStock)
+        {
+            var existing = _db.Menu.FirstOrDefault(m => m.FoodItemID == id);
+            if (existing == null) return false;
+
+            existing.InStock = inStock;
+            existing.RemainingQuantity = inStock ? 50 : 0;
+
+            _db.SaveChanges();
+            return true;
+        }
+
+        // Checkout items
+        public bool CheckoutItems(int id, int quantity)
+        {
+            var existing = _db.Menu.FirstOrDefault(m => m.FoodItemID == id);
+            if (existing == null) return false;
+
+            existing.RemainingQuantity -= quantity;
+            if (existing.RemainingQuantity <= 0)
+            {
+                existing.RemainingQuantity = 0;
+                existing.InStock = false;
+            }
+
+            _db.SaveChanges();
+            return true;
+        }
+
         // Delete item
         public bool DeleteItem(int id)
         {

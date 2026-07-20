@@ -1,8 +1,9 @@
 ﻿using CulinaryCart.CulinaryCartBAL.Constants;
 using CulinaryCart.CulinaryCartBAL.Repositories;
-using CulinaryCart.CulinaryCartDAL.Repositories;
 using CulinaryCart.CulinaryCartDAL.Models;
+using CulinaryCart.CulinaryCartDAL.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryCart.Controllers
 {
@@ -10,13 +11,16 @@ namespace CulinaryCart.Controllers
     [Route("api/[controller]")]
     public class CartController : ControllerBase
     {
+       
         private readonly CartBAL _cartBal;
         private readonly MenuDAL _menuDal;
+        private readonly OrderHistoryDAL _orderHistoryDal;
 
-        public CartController(CartBAL cartBal, MenuDAL menuDal)
+        public CartController(CartBAL cartBal, MenuDAL menuDal, OrderHistoryDAL orderHistoryDal)
         {
             _cartBal = cartBal;
             _menuDal = menuDal;
+            _orderHistoryDal = orderHistoryDal;
         }
         private int GetUserIdFromToken()
         {
@@ -89,7 +93,54 @@ namespace CulinaryCart.Controllers
             return Ok(new { Message = CulinaryCartConstants.Messages.CheckoutSuccessful });
         }
 
+        [HttpGet("order-stats")]
+        public IActionResult GetOrderStats()
+        {
+            var orders = _orderHistoryDal.GetAll();
+
+            var totalOrders = orders.Count;
+
+            var totalRevenue = orders.Sum(o => o.FinalPrice);
+
+            var topItem = orders
+                .GroupBy(o => o.FoodItemName)
+                .Select(g => new
+                {
+                    FoodItemName = g.Key,
+                    TotalQuantity = g.Sum(x => x.Quantity)
+                })
+                .OrderByDescending(g => g.TotalQuantity)
+                .Take(5)
+                .ToList();
+            //.FirstOrDefault();
+
+            return Ok(new
+            {
+                TotalOrders = totalOrders,
+                TotalRevenue = totalRevenue,
+                //TopOrderedItem = topItem?.FoodItemName,
+                //TopOrderedQuantity = topItem?.TotalQuantity
+                TopItems = topItem
+            });
+        }
+
+        [HttpGet("revenue-by-date")]
+        public IActionResult GetRevenueByDate()
+        {
+            var orders = _orderHistoryDal.GetAll();
+
+            var revenueByDate = orders
+                .GroupBy(o => o.OrderDate.Date)   // group by just the date
+                .Select(g => new {
+                    Date = g.Key.ToString("dd/MM"),
+                    TotalRevenue = g.Sum(x => x.FinalPrice),
+                    DateValue=g.Key
+                })
+                .OrderBy(g => g.DateValue)
+                .ToList();
+
+            return Ok(revenueByDate);
+        }
 
     }
-
 }
