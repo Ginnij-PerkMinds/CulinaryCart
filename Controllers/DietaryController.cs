@@ -20,27 +20,47 @@ namespace CulinaryCart.Controllers
         [HttpGet("GetDietaryPreferences")]
         public IActionResult GetDietaryPreferences()
         {
-            var diets = _dietDal.GetAllDietPreferences();
+            var diets = _dietDal.GetAllDietPreferences()
+                .Select(d => new DietaryPreferenceDto
+                {
+                    Id = d.DietId,
+                    Name = d.Diet
+                }).ToList();
             return Ok(diets);
         }
 
+        //[HttpPost("AddDietaryPreference")]
+        //public IActionResult AddDietaryPreference([FromQuery] string dietName)
+        //{
+        //    if (string.IsNullOrWhiteSpace(dietName))
+        //        return BadRequest(CulinaryCartConstants.Messages.DietaryPreferenceNameRequired);
+
+        //    var existing = _dietDal.GetByName(dietName);
+        //    if (existing != null)
+        //        return Conflict(CulinaryCartConstants.Messages.AlreadyInDB);
+
+        //    var diet = new DietaryPreference
+        //    {
+        //        Diet = dietName
+        //    };
+
+        //    _dietDal.AddDietPreference(diet);
+        //    return Ok(CulinaryCartConstants.Messages.DietaryPreferenceAdded);
+        //}
         [HttpPost("AddDietaryPreference")]
-        public IActionResult AddDietaryPreference([FromQuery] string dietName)
+        public IActionResult AddDietaryPreference([FromBody] DietaryPreferenceDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dietName))
+            if (string.IsNullOrWhiteSpace(dto.Name))
                 return BadRequest(CulinaryCartConstants.Messages.DietaryPreferenceNameRequired);
 
-            var existing = _dietDal.GetByName(dietName);
+            var existing = _dietDal.GetByName(dto.Name);
             if (existing != null)
                 return Conflict(CulinaryCartConstants.Messages.AlreadyInDB);
 
-            var diet = new DietaryPreference
-            {
-                Diet = dietName
-            };
-
+            var diet = new DietaryPreference { Diet = dto.Name };
             _dietDal.AddDietPreference(diet);
-            return Ok(CulinaryCartConstants.Messages.DietaryPreferenceAdded);
+
+            return Ok(new DietaryPreferenceDto { Id = diet.DietId, Name = diet.Diet });
         }
 
         // Get dietary preference by ID
@@ -49,7 +69,7 @@ namespace CulinaryCart.Controllers
         {
             var diet = _dietDal.GetById(id);
             if (diet == null) return NotFound(CulinaryCartConstants.Messages.DietaryPreferenceNotFound);
-
+            var dto = new DietaryPreferenceDto { Id = diet.DietId, Name = diet.Diet };
             return Ok(diet);
         }
 

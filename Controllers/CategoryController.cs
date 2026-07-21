@@ -22,29 +22,30 @@ namespace CulinaryCart.Controllers
         [HttpGet("GetCategories")]
         public IActionResult GetCategories()
         {
-            var categories = _categoryDal.GetAllCategories();
+            var categories = _categoryDal.GetAllCategories()
+            .Select(c => new CategoryDto
+             {
+                 Id = c.CategoryId,
+                 Name = c.CategoryName
+             }).ToList();
             return Ok(categories);
         }
 
         // Add new category
         [HttpPost("AddCategory")]
-        public IActionResult AddCategory([FromQuery] string categoryName)
+        public IActionResult AddCategory([FromBody] CategoryDto dto)
         {
-            if (string.IsNullOrWhiteSpace(categoryName))
+            if (string.IsNullOrWhiteSpace(dto.Name))
                 return BadRequest(CulinaryCartConstants.Messages.CategoryNameRequired);
 
-            // checking duplicates
-            var existing = _categoryDal.GetByName(categoryName);
+            var existing = _categoryDal.GetByName(dto.Name);
             if (existing != null)
                 return Conflict(CulinaryCartConstants.Messages.AlreadyInDB);
 
-            var category = new Category
-            {
-                CategoryName = categoryName
-            };
-
+            var category = new Category { CategoryName = dto.Name };
             _categoryDal.AddCategory(category);
-            return Ok(CulinaryCartConstants.Messages.CategoryAdded);
+
+            return Ok(new CategoryDto { Id = category.CategoryId, Name = category.CategoryName });
         }
 
         // Get category by ID
@@ -53,7 +54,11 @@ namespace CulinaryCart.Controllers
         {
             var category = _categoryDal.GetById(id);
             if (category == null) return NotFound(CulinaryCartConstants.Messages.CategoryNotFound);
-
+            var dto = new CategoryDto
+            {
+                Id = category.CategoryId,
+                Name = category.CategoryName
+            };
             return Ok(category); 
         }
 
