@@ -26,26 +26,7 @@ namespace CulinaryCart.Controllers
             return Ok(categories);
         }
 
-        // Add new category
-        //[HttpPost("AddCategory")]
-        //public IActionResult AddCategory([FromQuery] string categoryName)
-        //{
-        //    if (string.IsNullOrWhiteSpace(categoryName))
-        //        return BadRequest(CulinaryCartConstants.Messages.CategoryNameRequired);
-
-        //    // checking duplicates
-        //    var existing = _categoryDal.GetByName(categoryName);
-        //    if (existing != null)
-        //        return Conflict(CulinaryCartConstants.Messages.AlreadyInDB);
-
-        //    var category = new Category
-        //    {
-        //        CategoryName = categoryName
-        //    };
-
-        //    _categoryDal.AddCategory(category);
-        //    return Ok(CulinaryCartConstants.Messages.CategoryAdded);
-        //}
+        // Add Category
         [HttpPost("AddCategory")]
         public IActionResult AddCategory([FromBody] CategoryUpdateRequest request)
         {
@@ -73,23 +54,6 @@ namespace CulinaryCart.Controllers
         }
 
         // Update category
-        //[HttpPut("UpdateCategory/{id}")]
-        //[Consumes("multipart/form-data")]
-        //public IActionResult UpdateCategory(int id, [FromBody] CategoryUpdateRequest request)
-        //{
-
-        //    if (string.IsNullOrWhiteSpace(request.CategoryName))
-        //        return BadRequest(CulinaryCartConstants.Messages.CategoryUpdateNameRequired);
-
-        //    var category = _categoryDal.GetById(id);
-        //    if (category == null) return NotFound(CulinaryCartConstants.Messages.CategoryNotFound);
-
-        //    var updated = _categoryDal.UpdateCategory(id, request.CategoryName);
-        //    if (!updated)
-        //        return BadRequest(CulinaryCartConstants.Messages.CategoryUpdateFailed);
-
-        //    return Ok(CulinaryCartConstants.Messages.CategoryUpdated);
-        //}
         [HttpPut("UpdateCategory/{id}")]
         public IActionResult UpdateCategory(int id, [FromBody] CategoryUpdateRequest request)
         {
