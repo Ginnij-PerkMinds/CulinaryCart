@@ -1,4 +1,91 @@
-﻿using CulinaryCart.CulinaryCartDAL.Repositories;
+﻿//using CulinaryCart.CulinaryCartDAL.Repositories;
+//using CulinaryCart.CulinaryCartDAL.Models;
+//using Microsoft.AspNetCore.Mvc;
+//using CulinaryCart.CulinaryCartBAL.Models.DTO;
+//using CulinaryCart.CulinaryCartBAL.Constants;
+
+//namespace CulinaryCart.Controllers
+//{
+//    [ApiController]
+//    [Route("api/[controller]")]
+//    public class DietaryPreferenceController : ControllerBase
+//    {
+//        private readonly DietDAL _dietDal;
+
+//        public DietaryPreferenceController(DietDAL dietDal)
+//        {
+//            _dietDal = dietDal;
+//        }
+
+//        [HttpGet("GetDietaryPreferences")]
+//        public IActionResult GetDietaryPreferences()
+//        {
+//            var diets = _dietDal.GetAllDietPreferences();
+//            return Ok(diets);
+//        }
+
+//        [HttpPost("AddDietaryPreference")]
+//        public IActionResult AddDietaryPreference([FromQuery] string dietName)
+//        {
+//            if (string.IsNullOrWhiteSpace(dietName))
+//                return BadRequest(CulinaryCartConstants.Messages.DietaryPreferenceNameRequired);
+
+//            var existing = _dietDal.GetByName(dietName);
+//            if (existing != null)
+//                return Conflict(CulinaryCartConstants.Messages.AlreadyInDB);
+
+//            var diet = new DietaryPreference
+//            {
+//                Diet = dietName
+//            };
+
+//            _dietDal.AddDietPreference(diet);
+//            return Ok(CulinaryCartConstants.Messages.DietaryPreferenceAdded);
+//        }
+
+//        // Get dietary preference by ID
+//        [HttpGet("GetDietaryPreference/{id}")]
+//        public IActionResult GetDietaryPreference(int id)
+//        {
+//            var diet = _dietDal.GetById(id);
+//            if (diet == null) return NotFound(CulinaryCartConstants.Messages.DietaryPreferenceNotFound);
+
+//            return Ok(diet);
+//        }
+
+//        // Update dietary preference
+//        [HttpPut("UpdateDietaryPreference/{id}")]
+//        [Consumes("multipart/form-data")]
+//        public IActionResult UpdateDietaryPreference(int id, [FromBody] DietUpdateRequest request)
+//        {
+//            if (string.IsNullOrWhiteSpace(request.Diet))
+//                return BadRequest(CulinaryCartConstants.Messages.DietaryPreferenceNameRequired);
+
+//            var diet = _dietDal.GetById(id);
+//            if (diet == null)
+//                return NotFound(CulinaryCartConstants.Messages.DietaryPreferenceNotFound);
+
+//            var updated = _dietDal.UpdateDietPreference(id, request.Diet);
+//            if (!updated)
+//                return BadRequest(CulinaryCartConstants.Messages.DietaryPreferenceUpdateFailed);
+
+//            return Ok(CulinaryCartConstants.Messages.DietaryPreferenceUpdated);
+//        }
+
+
+//            // Delete dietary preference
+//            [HttpDelete("DeleteDietaryPreference/{id}")]
+//            public IActionResult DeleteDietaryPreference(int id)
+//            {
+//                var success = _dietDal.DeleteDietPreference(id);
+//                if (!success) return NotFound(CulinaryCartConstants.Messages.DietaryPreferenceNotFound);
+
+//                return Ok(CulinaryCartConstants.Messages.DietaryPreferenceDeleted);
+//            }
+//        }
+//    }
+
+using CulinaryCart.CulinaryCartDAL.Repositories;
 using CulinaryCart.CulinaryCartDAL.Models;
 using Microsoft.AspNetCore.Mvc;
 using CulinaryCart.CulinaryCartBAL.Models.DTO;
@@ -25,22 +112,19 @@ namespace CulinaryCart.Controllers
         }
 
         [HttpPost("AddDietaryPreference")]
-        public IActionResult AddDietaryPreference([FromQuery] string dietName)
+        public IActionResult AddDietaryPreference([FromBody] DietUpdateRequest request)
         {
-            if (string.IsNullOrWhiteSpace(dietName))
-                return BadRequest(CulinaryCartConstants.Messages.DietaryPreferenceNameRequired);
+            if (string.IsNullOrWhiteSpace(request.Diet))
+                return BadRequest(new { message = "Dietary Preference name required"});
 
-            var existing = _dietDal.GetByName(dietName);
+            var existing = _dietDal.GetByName(request.Diet);
             if (existing != null)
-                return Conflict(CulinaryCartConstants.Messages.AlreadyInDB);
+                return Conflict(new {message = "Already in Database"});
 
-            var diet = new DietaryPreference
-            {
-                Diet = dietName
-            };
-
+            var diet = new DietaryPreference { Diet = request.Diet };
             _dietDal.AddDietPreference(diet);
-            return Ok(CulinaryCartConstants.Messages.DietaryPreferenceAdded);
+
+            return Ok(new { message = "Dietary preference added successfully!" });
         }
 
         // Get dietary preference by ID
@@ -55,34 +139,33 @@ namespace CulinaryCart.Controllers
 
         // Update dietary preference
         [HttpPut("UpdateDietaryPreference/{id}")]
-        [Consumes("multipart/form-data")]
         public IActionResult UpdateDietaryPreference(int id, [FromBody] DietUpdateRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Diet))
-                return BadRequest(CulinaryCartConstants.Messages.DietaryPreferenceNameRequired);
+                return BadRequest(new { message = "Dietary Preference Name Required" });
 
             var diet = _dietDal.GetById(id);
             if (diet == null)
-                return NotFound(CulinaryCartConstants.Messages.DietaryPreferenceNotFound);
+                return NotFound(new { message = "Dietary Preference Not Found" });
 
             var updated = _dietDal.UpdateDietPreference(id, request.Diet);
             if (!updated)
-                return BadRequest(CulinaryCartConstants.Messages.DietaryPreferenceUpdateFailed);
+                return BadRequest(new { message = "Dietary Preference Update Failed" });
 
-            return Ok(CulinaryCartConstants.Messages.DietaryPreferenceUpdated);
+            return Ok(new { message = "Dietary Preference Successfully Updated"});
         }
 
+        // Delete dietary preference
+        [HttpDelete("DeleteDietaryPreference/{id}")]
+        public IActionResult DeleteDietaryPreference(int id)
+        {
+            var success = _dietDal.DeleteDietPreference(id);
+            if (!success) return NotFound(new {Message = "Dietary Preference Not Found"});
 
-            // Delete dietary preference
-            [HttpDelete("DeleteDietaryPreference/{id}")]
-            public IActionResult DeleteDietaryPreference(int id)
-            {
-                var success = _dietDal.DeleteDietPreference(id);
-                if (!success) return NotFound(CulinaryCartConstants.Messages.DietaryPreferenceNotFound);
-
-                return Ok(CulinaryCartConstants.Messages.DietaryPreferenceDeleted);
-            }
+            return Ok(new { message = "DietaryPreference Successfully Deleted"});
         }
     }
+}
+
 
 
