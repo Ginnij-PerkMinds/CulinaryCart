@@ -35,7 +35,7 @@ namespace CulinaryCart.Controllers
 
             var existing = _categoryDal.GetByName(request.CategoryName);
             if (existing != null)
-                return Conflict(new { message = "Already In DataBase"});
+                return Conflict(new { message = "Category Already Exists"});
 
             var category = new Category { CategoryName = request.CategoryName };
             _categoryDal.AddCategory(category);
