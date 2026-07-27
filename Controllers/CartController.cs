@@ -1,9 +1,7 @@
 ﻿using CulinaryCart.CulinaryCartBAL.Constants;
 using CulinaryCart.CulinaryCartBAL.Repositories;
-using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryCartDAL.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryCart.Controllers
 {
@@ -11,7 +9,6 @@ namespace CulinaryCart.Controllers
     [Route("api/[controller]")]
     public class CartController : ControllerBase
     {
-       
         private readonly CartBAL _cartBal;
         private readonly MenuDAL _menuDal;
         private readonly OrderHistoryDAL _orderHistoryDal;
@@ -22,6 +19,7 @@ namespace CulinaryCart.Controllers
             _menuDal = menuDal;
             _orderHistoryDal = orderHistoryDal;
         }
+
         private int GetUserIdFromToken()
         {
             var userIdClaim = User.FindFirst("userId");
@@ -30,80 +28,146 @@ namespace CulinaryCart.Controllers
             return int.Parse(userIdClaim.Value);
         }
 
+        // Add item to cart
         [HttpPost("add")]
         public IActionResult AddToCart(int foodItemId, int qty)
         {
+            int userId = GetUserIdFromToken();
             var menuItem = _menuDal.GetItem(foodItemId);
 
             if (menuItem == null)
-            {
                 return NotFound($"Menu item with ID {foodItemId} not found.");
-            }
 
-            var finalPrice = _cartBal.CalculateFinalPrice(menuItem, qty);
-            _cartBal.AddItem(foodItemId, qty);
+            _cartBal.AddItem(userId, foodItemId, qty);
             return Ok(CulinaryCartConstants.Messages.ItemAdded);
         }
 
+        // Update item in cart
         [HttpPut("update")]
         public IActionResult UpdateCartItem(int foodItemId, int qty)
         {
+            int userId = GetUserIdFromToken();
             var menuItem = _menuDal.GetItem(foodItemId);
 
             if (menuItem == null)
-            {
                 return NotFound($"Menu item with ID {foodItemId} not found.");
-            }
 
-            var finalPrice = _cartBal.CalculateFinalPrice(menuItem, qty);
-            _cartBal.UpdateItem(foodItemId, qty);
+            _cartBal.UpdateItem(userId, foodItemId, qty);
             return Ok(CulinaryCartConstants.Messages.ItemUpdated);
         }
 
+        // Delete item from cart
         [HttpDelete("delete/{foodItemId}")]
         public IActionResult DeleteCartItem(int foodItemId)
         {
-            var item = _menuDal.GetItem(foodItemId); 
-            if (item == null)
-            {
-                return NotFound($"Cart item with ID {foodItemId} not found.");
-            }
+            int userId = GetUserIdFromToken();
+            var menuItem = _menuDal.GetItem(foodItemId);
 
-            _cartBal.DeleteItem(foodItemId);
+            if (menuItem == null)
+                return NotFound($"Cart item with ID {foodItemId} not found.");
+
+            _cartBal.DeleteItem(userId, foodItemId);
             return Ok(CulinaryCartConstants.Messages.ItemRemoved);
         }
 
-        [HttpGet]
-        [Route("ViewCart")]
+        // View cart
+        [HttpGet("view")]
         public IActionResult ViewCart()
         {
-            var items = _cartBal.GetCartItems();
+            int userId = GetUserIdFromToken();
+            var items = _cartBal.GetCartItems(userId);
 
             if (items == null || !items.Any())
-            {
-                return Ok(new { Message = CulinaryCartConstants.Messages.CartIsEmpty });
-            }
+                return Ok(new { Message = CulinaryCartConstants.Messages.CartisEmpty });
 
             return Ok(items);
         }
+
+        // Checkout
         [HttpPost("checkout")]
         public IActionResult Checkout()
         {
-            _cartBal.Checkout();   
-            return Ok(new { Message = CulinaryCartConstants.Messages.CheckoutSuccessful });
+            int userId = GetUserIdFromToken();
+            var order = _cartBal.Checkout(userId);
+
+            if (order == null)
+                return BadRequest("Cart is empty.");
+
+            return Ok(new
+            {
+                OrderId = order.OrderId,
+                TotalAmount = order.TotalAmount,
+                Message = CulinaryCartConstants.Messages.CheckoutSuccessful
+            });
         }
 
+        [HttpGet("order-history/{userId}")]
+        public IActionResult GetOrderHistoryByUser(int userId)
+        {
+            var orders = _orderHistoryDal.GetByUser(userId)
+                .Where(o => o.Status == CulinaryCartConstants.Status.CheckedOut)
+                .OrderByDescending(o => o.OrderDate)
+                .Select(o => new
+                {
+                    o.OrderId,
+                    o.OrderDate,
+                    o.TotalAmount,
+                    Items = o.OrderItems.Select(i => new
+                    {
+                        i.FoodItemName,
+                        i.Quantity,
+                        i.FinalPrice
+                    })
+                })
+                .ToList();
+
+            if (!orders.Any())
+                return Ok(new { Message = $"No past orders found for user {userId}." });
+
+            return Ok(orders);
+        }
+
+
+        [HttpGet("my-orders")]
+        public IActionResult GetMyOrders()
+        {
+            int userId = GetUserIdFromToken();
+
+            var orders = _orderHistoryDal.GetByUser(userId)
+                .Where(o => o.Status == CulinaryCartConstants.Status.CheckedOut)
+                .OrderByDescending(o => o.OrderDate)
+                .Select(o => new
+                {
+                    o.OrderId,
+                    o.OrderDate,
+                    o.TotalAmount,
+                    Items = o.OrderItems.Select(i => new
+                    {
+                        i.FoodItemName,
+                        i.Quantity,
+                        i.FinalPrice
+                    })
+                })
+                .ToList();
+
+            if (!orders.Any())
+                return Ok(new { Message = "No past orders found." });
+
+            return Ok(orders);
+        }
+
+        // Order stats
         [HttpGet("order-stats")]
         public IActionResult GetOrderStats()
         {
-            var orders = _orderHistoryDal.GetAll();
+            var orders = _orderHistoryDal.GetCheckedOutOrders();
 
             var totalOrders = orders.Count;
+            var totalRevenue = orders.Sum(o => o.TotalAmount);
 
-            var totalRevenue = orders.Sum(o => o.FinalPrice);
-
-            var topItem = orders
-                .GroupBy(o => o.FoodItemName)
+            var topItems = orders
+                .SelectMany(o => o.OrderItems)
+                .GroupBy(i => i.FoodItemName)
                 .Select(g => new
                 {
                     FoodItemName = g.Key,
@@ -112,35 +176,33 @@ namespace CulinaryCart.Controllers
                 .OrderByDescending(g => g.TotalQuantity)
                 .Take(5)
                 .ToList();
-            //.FirstOrDefault();
 
             return Ok(new
             {
                 TotalOrders = totalOrders,
                 TotalRevenue = totalRevenue,
-                //TopOrderedItem = topItem?.FoodItemName,
-                //TopOrderedQuantity = topItem?.TotalQuantity
-                TopItems = topItem
+                TopItems = topItems
             });
         }
 
+        // Revenue by date
         [HttpGet("revenue-by-date")]
         public IActionResult GetRevenueByDate()
         {
-            var orders = _orderHistoryDal.GetAll();
+            var orders = _orderHistoryDal.GetCheckedOutOrders();
 
             var revenueByDate = orders
-                .GroupBy(o => o.OrderDate.Date)   // group by just the date
-                .Select(g => new {
+                .GroupBy(o => o.OrderDate.Date)
+                .Select(g => new
+                {
                     Date = g.Key.ToString("dd/MM"),
-                    TotalRevenue = g.Sum(x => x.FinalPrice),
-                    DateValue=g.Key
+                    TotalRevenue = g.Sum(o => o.TotalAmount),
+                    DateValue = g.Key
                 })
                 .OrderBy(g => g.DateValue)
                 .ToList();
 
             return Ok(revenueByDate);
         }
-
     }
 }

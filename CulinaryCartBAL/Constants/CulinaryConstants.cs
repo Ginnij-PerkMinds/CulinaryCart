@@ -22,8 +22,6 @@
 
             public const string UserIdClaimMissing = "User ID claim is missing in the token.";
 
-            public const string CartIsEmpty = "Cart is empty.";
-
             public const string CategoryAdded = "Category added successfully.";
             public const string CategoryUpdated = "Category updated successfully.";
             public const string CategoryDeleted = "Category deleted successfully.";

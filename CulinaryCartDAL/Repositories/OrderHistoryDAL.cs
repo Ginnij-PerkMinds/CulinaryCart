@@ -1,41 +1,75 @@
-﻿using CulinaryCart.CulinaryCartDAL.DbContext;
+﻿using CulinaryCart.CulinaryCartBAL.Constants;
+using CulinaryCart.CulinaryCartDAL.DbContext;
 using CulinaryCart.CulinaryCartDAL.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CulinaryCart.CulinaryCartDAL.Repositories
 {
     public class OrderHistoryDAL
     {
         private readonly CulinaryCartDbContext _db;
-        public OrderHistoryDAL(CulinaryCartDbContext db) 
+
+        public OrderHistoryDAL(CulinaryCartDbContext db)
         {
-            _db = db; 
+            _db = db;
         }
 
-        public void Add(OrderHistory history) 
-        { 
-            _db.OrderHistory.Add(history); 
-            _db.SaveChanges(); 
-        }
-        public void Update(OrderHistory history) 
-        { 
-            _db.OrderHistory.Update(history); 
-            _db.SaveChanges();
-        }
-        //public void Delete(OrderHistory history) 
-        //{ 
-        //    _db.OrderHistory.Remove(history); 
-        //    _db.SaveChanges(); 
-        //}
-        public void Delete(OrderHistory item)
+        // Add a new order with items
+        public void Add(Order order)
         {
-            _db.OrderHistory.Remove(item);
+            _db.Orders.Add(order);
             _db.SaveChanges();
         }
 
-        public List<OrderHistory> GetAll()
+        // Update an existing order (status, totals, etc.)
+        public void Update(Order order)
         {
-            return _db.OrderHistory.ToList();
+            _db.Orders.Update(order);
+            _db.SaveChanges();
+        }
+
+        // Delete an order (removes order + items)
+        public void Delete(Order order)
+        {
+            _db.Orders.Remove(order);
+            _db.SaveChanges();
+        }
+
+        // Get all orders with their items
+        public List<Order> GetAll()
+        {
+            return _db.Orders
+                      .Include(o => o.OrderItems)
+                      .ToList();
+        }
+
+        // Get a single order by ID with items
+        public Order? GetById(int orderId)
+        {
+            return _db.Orders
+                      .Include(o => o.OrderItems)
+                      .FirstOrDefault(o => o.OrderId == orderId);
+        }
+
+        // Get all orders for a specific user
+        public List<Order> GetByUser(int userId)
+        {
+            return _db.Orders
+                      .Include(o => o.OrderItems)
+                      .Where(o => o.UserId == userId)
+                      .ToList();
+        }
+
+        // Get only checked-out orders (useful for stats)
+        public List<Order> GetCheckedOutOrders()
+        {
+            return _db.Orders
+                      .Include(o => o.OrderItems)
+                      .Where(o => o.Status == CulinaryCartConstants.Status.CheckedOut)
+                      .ToList();
         }
     }
 }
+

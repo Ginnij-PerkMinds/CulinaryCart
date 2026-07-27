@@ -15,6 +15,8 @@ public class CulinaryCartDbContext : DbContext
     public DbSet<User> Users { get; set; }   //added for user management
     public DbSet<Address> Address { get; set; }    // Address management
     public DbSet<RevokedToken> RevokedTokens { get; set; }    //logout
+    public DbSet<Order> Orders { get; set; }
+    public DbSet<OrderItem> OrderItems { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -62,6 +64,12 @@ public class CulinaryCartDbContext : DbContext
         modelBuilder.Entity<User>()
             .HasIndex(u => u.EmailId)
             .IsUnique();
-    }
-}
 
+       // Order   
+        modelBuilder.Entity<Order>()
+            .HasMany(o => o.OrderItems)
+            .WithOne(i => i.Order)
+            .HasForeignKey(i => i.OrderId);
+    
+}
+}

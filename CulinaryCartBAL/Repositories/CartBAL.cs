@@ -1,7 +1,6 @@
 ﻿using CulinaryCart.CulinaryCartBAL.Constants;
 using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryCartDAL.Repositories;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +9,6 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
 {
     public class CartBAL
     {
-        private readonly CartDAL _cartDal;
         private readonly MenuDAL _menuDal;
         private readonly OrderHistoryDAL _orderHistoryDal;
 
@@ -26,7 +24,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             if (menuItem == null) return 0;
 
             decimal basePrice = menuItem.Price * qty;
-            decimal finalprice = basePrice;
+            decimal finalPrice = basePrice;
 
             if (!string.IsNullOrWhiteSpace(menuItem.Offers))
             {
@@ -36,71 +34,92 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 {
                     string percentString = offer.Replace("%", "").Trim();
                     if (decimal.TryParse(percentString, out var percent))
-                    {
-                        finalprice = basePrice - ((basePrice / 100) * percent);
-                    }
+                        finalPrice = basePrice - ((basePrice / 100) * percent);
                 }
                 else if (offer == "BUY1GET1")
                 {
                     int payableQty = (qty + 1) / 2;
-                    finalprice = menuItem.Price * payableQty;
+                    finalPrice = menuItem.Price * payableQty;
                 }
                 else if (offer == "BUY2GET1")
                 {
                     int freeItems = qty / 3;
-                    finalprice = basePrice - (freeItems * menuItem.Price);
+                    finalPrice = basePrice - (freeItems * menuItem.Price);
                 }
                 else if (offer == "BUY3GET1")
                 {
                     int freeItems = qty / 4;
-                    finalprice = basePrice - (freeItems * menuItem.Price);
+                    finalPrice = basePrice - (freeItems * menuItem.Price);
                 }
             }
 
-            return finalprice;
+            return finalPrice;
         }
 
         // Add item to cart
-        public void AddItem(int foodItemId, int qty)
+        public void AddItem(int userId, int foodItemId, int qty)
         {
             var menuItem = _menuDal.GetItem(foodItemId);
             if (menuItem == null) return;
 
-            var existing = _orderHistoryDal.GetAll()
-                .FirstOrDefault(h => h.FoodItemID == foodItemId &&
-                                     h.Status == CulinaryCartConstants.Status.InCart);
+            var order = _orderHistoryDal.GetByUser(userId)
+                .FirstOrDefault(o => o.Status == CulinaryCartConstants.Status.InCart);
 
-            if (existing != null)
+            if (order == null)
             {
-                existing.Quantity += qty;
-                existing.FinalPrice = CalculateFinalPrice(menuItem, existing.Quantity);
-                _orderHistoryDal.Update(existing);
-            }
-            else
-            {
-                var entry = new OrderHistory
+                order = new Order
                 {
-                    FoodItemID = foodItemId,
+                    UserId = userId,
+                    OrderDate = DateTime.UtcNow,
+                    Status = CulinaryCartConstants.Status.InCart
+                };
+
+                order.OrderItems.Add(new OrderItem
+                {
+                    FoodItemId = foodItemId,
                     FoodItemName = menuItem.FoodItemName,
                     Quantity = qty,
                     Price = menuItem.Price,
-                    FinalPrice = CalculateFinalPrice(menuItem, qty),
-                    Status = CulinaryCartConstants.Status.InCart,
-                    OrderDate = DateTime.Now
-                };
-                _orderHistoryDal.Add(entry);
+                    FinalPrice = CalculateFinalPrice(menuItem, qty)
+                });
+
+                order.TotalAmount = order.OrderItems.Sum(i => i.FinalPrice);
+                _orderHistoryDal.Add(order);   // persist new order
+            }
+            else
+            {
+                var existingItem = order.OrderItems.FirstOrDefault(i => i.FoodItemId == foodItemId);
+                if (existingItem != null)
+                {
+                    existingItem.Quantity += qty;
+                    existingItem.FinalPrice = CalculateFinalPrice(menuItem, existingItem.Quantity);
+                }
+                else
+                {
+                    order.OrderItems.Add(new OrderItem
+                    {
+                        FoodItemId = foodItemId,
+                        FoodItemName = menuItem.FoodItemName,
+                        Quantity = qty,
+                        Price = menuItem.Price,
+                        FinalPrice = CalculateFinalPrice(menuItem, qty)
+                    });
+                }
+
+                order.TotalAmount = order.OrderItems.Sum(i => i.FinalPrice);
+                _orderHistoryDal.Update(order);   // update existing order
             }
         }
 
-
-
         // Update item in cart
-        public void UpdateItem(int foodItemId, int qty)
+        public void UpdateItem(int userId, int foodItemId, int qty)
         {
-            var item = _orderHistoryDal.GetAll()
-                .FirstOrDefault(h => h.FoodItemID == foodItemId &&
-                                     h.Status == CulinaryCartConstants.Status.InCart);
+            var order = _orderHistoryDal.GetByUser(userId)
+                .FirstOrDefault(o => o.Status == CulinaryCartConstants.Status.InCart);
 
+            if (order == null) return;
+
+            var item = order.OrderItems.FirstOrDefault(i => i.FoodItemId == foodItemId);
             if (item != null)
             {
                 var menuItem = _menuDal.GetItem(foodItemId);
@@ -108,79 +127,97 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 {
                     item.Quantity = qty;
                     item.FinalPrice = CalculateFinalPrice(menuItem, qty);
-                    _orderHistoryDal.Update(item);
                 }
+
+                order.TotalAmount = order.OrderItems.Sum(i => i.FinalPrice);
+                _orderHistoryDal.Update(order);
             }
         }
-
-
 
         // Delete item from cart
-        public void DeleteItem(int foodItemId)
+        public void DeleteItem(int userId, int foodItemId)
         {
-            var item = _orderHistoryDal.GetAll()
-                .FirstOrDefault(h => h.FoodItemID == foodItemId &&
-                                     h.Status == CulinaryCartConstants.Status.InCart);
+            var order = _orderHistoryDal.GetByUser(userId)
+                .FirstOrDefault(o => o.Status == CulinaryCartConstants.Status.InCart);
+
+            if (order == null) return;
+
+            var item = order.OrderItems.FirstOrDefault(i => i.FoodItemId == foodItemId);
             if (item != null)
             {
-                _orderHistoryDal.Delete(item);
+                order.OrderItems.Remove(item);
+                order.TotalAmount = order.OrderItems.Any()
+                    ? order.OrderItems.Sum(i => i.FinalPrice)
+                    : 0;
+
+                _orderHistoryDal.Update(order);
             }
-
         }
-        
 
+        // Get cart items
+        public IEnumerable<OrderItem> GetCartItems(int userId)
+        {
+            var order = _orderHistoryDal.GetByUser(userId)
+                .FirstOrDefault(o => o.Status == CulinaryCartConstants.Status.InCart);
+
+            return order?.OrderItems ?? new List<OrderItem>();
+        }
 
         // Calculate total cart value
-        public decimal CalculateCartTotal()
+        public decimal CalculateCartTotal(int userId)
         {
-            return _orderHistoryDal.GetAll()
-                .Where(h => h.Status == CulinaryCartConstants.Status.InCart)
-                .Sum(h => h.FinalPrice);
+            var items = GetCartItems(userId);
+            return items.Sum(i => i.FinalPrice);
         }
 
-        // Implemented: return cart items
-        public IEnumerable<OrderHistory> GetCartItems()
+        // Clear cart
+        public void ClearCart(int userId)
         {
-            return _orderHistoryDal.GetAll()
-                .Where(h => h.Status == CulinaryCartConstants.Status.InCart)
-                .ToList();
+            var order = _orderHistoryDal.GetByUser(userId)
+                .FirstOrDefault(o => o.Status == CulinaryCartConstants.Status.InCart);
+
+            if (order != null)
+            {
+                order.OrderItems.Clear();
+                order.TotalAmount = 0;
+                _orderHistoryDal.Update(order);
+            }
         }
 
         // Checkout
-        public void Checkout()
+        public Order Checkout(int userId)
         {
-            
-            var items = _orderHistoryDal.GetAll()
-                .Where(h =>  h.Status == CulinaryCartConstants.Status.InCart)
-                .ToList();
+            var order = _orderHistoryDal.GetByUser(userId)
+                .FirstOrDefault(o => o.Status == CulinaryCartConstants.Status.InCart);
 
-            foreach (var item in items)
+            if (order == null || !order.OrderItems.Any())
+                return null;
+
+            foreach (var item in order.OrderItems)
             {
-                
-                var menuItem = _menuDal.GetItem(item.FoodItemID);
+                var menuItem = _menuDal.GetItem(item.FoodItemId);
                 if (menuItem != null)
                 {
-                    
                     menuItem.RemainingQuantity -= item.Quantity;
-
-                    
                     if (menuItem.RemainingQuantity <= 0)
                     {
                         menuItem.RemainingQuantity = 0;
-                        menuItem.InStock = false; // auto toggle off
+                        menuItem.InStock = false;
                     }
-
-                   
                     _menuDal.Update(menuItem);
                 }
-
-                
-                item.Status = CulinaryCartConstants.Status.CheckedOut;
-                _orderHistoryDal.Update(item);
             }
-        }
 
+            order.Status = CulinaryCartConstants.Status.CheckedOut;
+            order.OrderDate = DateTime.UtcNow;
+            order.TotalAmount = order.OrderItems.Sum(i => i.FinalPrice);
+
+            _orderHistoryDal.Update(order);
+
+            // Clear cart after checkout
+            this.ClearCart(userId);
+
+            return order;
+        }
     }
 }
-
-
