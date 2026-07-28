@@ -17,6 +17,7 @@ public class CulinaryCartDbContext : DbContext
     public DbSet<RevokedToken> RevokedTokens { get; set; }    //logout
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
+    public DbSet<Promocode> Promocode { get; set; } 
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

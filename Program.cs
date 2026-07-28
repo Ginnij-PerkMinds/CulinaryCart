@@ -13,8 +13,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-
-
 internal class Program
 {
     private static void Main(string[] args)
@@ -95,10 +93,12 @@ internal class Program
         builder.Services.AddScoped<DietDAL>();
         builder.Services.AddScoped<OrderHistoryDAL>();
         builder.Services.AddScoped<UserDAL>();
+        builder.Services.AddScoped<PromocodeDAL>();
 
         builder.Services.AddScoped<MenuBAL>();
         builder.Services.AddScoped<CartBAL>();
         builder.Services.AddScoped<UserBAL>();
+        builder.Services.AddScoped<PromocodeBAL>();
 
         builder.Services.AddScoped<IImageFAL, ImageFAL>();
 
