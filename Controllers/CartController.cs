@@ -133,13 +133,15 @@ namespace CulinaryCart.Controllers
         {
             int userId = GetUserIdFromToken();
 
+            var indiaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+
             var orders = _orderHistoryDal.GetByUser(userId)
                 .Where(o => o.Status == CulinaryCartConstants.Status.CheckedOut)
                 .OrderByDescending(o => o.OrderDate)
                 .Select(o => new
                 {
                     o.OrderId,
-                    o.OrderDate,
+                    OrderDate = TimeZoneInfo.ConvertTimeFromUtc(o.OrderDate, indiaTimeZone),
                     o.TotalAmount,
                     Items = o.OrderItems.Select(i => new
                     {
