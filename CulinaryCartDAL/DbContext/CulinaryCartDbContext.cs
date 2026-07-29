@@ -18,12 +18,13 @@ public class CulinaryCartDbContext : DbContext
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<Promocode> Promocode { get; set; } 
+    public DbSet<Charge> Charge { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Category>().ToTable("Categories");          
-        modelBuilder.Entity<DietaryPreference>().ToTable("DietaryPreference"); 
+        modelBuilder.Entity<Category>().ToTable("Categories");
+        modelBuilder.Entity<DietaryPreference>().ToTable("DietaryPreference");
         modelBuilder.Entity<Menu>().ToTable("Menu");
         modelBuilder.Entity<OrderHistory>().ToTable("OrderHistory");
         modelBuilder.Entity<CartItem>().ToTable("CartItems");
@@ -31,10 +32,10 @@ public class CulinaryCartDbContext : DbContext
         modelBuilder.Entity<Address>().ToTable("Address");  //added
 
         // Defining primary keys:
-        modelBuilder.Entity<Category>().HasKey(c => c.CategoryId);          
-        modelBuilder.Entity<DietaryPreference>().HasKey(d => d.DietId);       
-        modelBuilder.Entity<Menu>().HasKey(m => m.FoodItemID);                  
-        modelBuilder.Entity<OrderHistory>().HasKey(o => o.HistoryID);          
+        modelBuilder.Entity<Category>().HasKey(c => c.CategoryId);
+        modelBuilder.Entity<DietaryPreference>().HasKey(d => d.DietId);
+        modelBuilder.Entity<Menu>().HasKey(m => m.FoodItemID);
+        modelBuilder.Entity<OrderHistory>().HasKey(o => o.HistoryID);
         modelBuilder.Entity<CartItem>().HasKey(c => c.CartItemId);
         modelBuilder.Entity<User>().HasKey(u => u.UserId);  // added for user management
         modelBuilder.Entity<Address>().HasKey(a => a.AddressId);  // added
@@ -43,13 +44,13 @@ public class CulinaryCartDbContext : DbContext
         modelBuilder.Entity<Menu>()
             .HasOne(m => m.Category)
             .WithMany(c => c.MenuItems)
-            .HasForeignKey(m => m.CategoryId);                                  
+            .HasForeignKey(m => m.CategoryId);
 
         modelBuilder.Entity<Menu>()
             .HasOne(m => m.DietaryPreference)
             .WithMany(d => d.MenuItems)
             .HasForeignKey(m => m.DietId);
-        
+
         modelBuilder.Entity<Menu>()
             .Property(m => m.RemainingQuantity)
             .HasDefaultValue(50);
@@ -57,7 +58,7 @@ public class CulinaryCartDbContext : DbContext
         // this things are added 
         modelBuilder.Entity<User>()
               .HasOne(u => u.Address)
-              .WithOne(a=> a.User)
+              .WithOne(a => a.User)
               .HasForeignKey<Address>(a => a.UserId)
               .OnDelete(DeleteBehavior.Cascade);
 
@@ -66,11 +67,28 @@ public class CulinaryCartDbContext : DbContext
             .HasIndex(u => u.EmailId)
             .IsUnique();
 
-       // Order   
+        // Order   
         modelBuilder.Entity<Order>()
             .HasMany(o => o.OrderItems)
             .WithOne(i => i.Order)
             .HasForeignKey(i => i.OrderId);
-    
-}
-}
+      
+        // Charges
+        modelBuilder.Entity<Charge>().ToTable("Charges");
+        modelBuilder.Entity<Charge>().HasKey(c => c.ChargeId);
+
+        modelBuilder.Entity<Charge>()
+            .Property(c => c.ChargeType)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<Charge>()
+            .Property(c => c.Value)
+            .HasColumnType("decimal(18,2)")
+            .IsRequired();
+
+        modelBuilder.Entity<Charge>()
+            .Property(c => c.IsActive)
+            .HasDefaultValue(false);
+      }
+    }

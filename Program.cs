@@ -1,17 +1,18 @@
+using CulinaryCart.CulinaryCartBAL.Models.DTO;
 using CulinaryCart.CulinaryCartBAL.Repositories;
 using CulinaryCart.CulinaryCartDAL.DbContext;
 using CulinaryCart.CulinaryCartDAL.Repositories;
 using CulinaryCart.CulinaryFAL;
 using CulinaryCart.Filters;
 using CulinaryCart.Middleware;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
-using Microsoft.EntityFrameworkCore;
-using System.Text.Json.Serialization;
 using Swashbuckle.AspNetCore.Annotations;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json.Serialization;
 
 internal class Program
 {
@@ -94,11 +95,13 @@ internal class Program
         builder.Services.AddScoped<OrderHistoryDAL>();
         builder.Services.AddScoped<UserDAL>();
         builder.Services.AddScoped<PromocodeDAL>();
+        builder.Services.AddScoped<ChargeDAL>();
 
         builder.Services.AddScoped<MenuBAL>();
         builder.Services.AddScoped<CartBAL>();
         builder.Services.AddScoped<UserBAL>();
         builder.Services.AddScoped<PromocodeBAL>();
+        builder.Services.AddScoped<ChargeBAL>();
 
         builder.Services.AddScoped<IImageFAL, ImageFAL>();
 
