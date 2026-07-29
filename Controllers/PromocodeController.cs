@@ -32,25 +32,24 @@ namespace CulinaryCart.Controllers
         public IActionResult AddPromocode([FromBody] Promocode promo)
         {
             if (_bal.AddPromocode(promo))
-                return Ok("Promocode added successfully");
-            return BadRequest("Failed to add promocode");
+                return Ok(new { success = true, message = "Promocode added successfully" });
+            return BadRequest(new { success = false, message = "Failed to add promocode" });
         }
 
         [HttpPut("UpdatePromocode/{id}")]
         public IActionResult UpdatePromocode(int id, [FromBody] Promocode promo)
         {
             if (_bal.UpdatePromocode(id, promo))
-                return Ok("Promocode updated successfully");
-            return BadRequest("Update failed");
+                return Ok(new { success = true, message = "Promocode updated successfully" });
+            return BadRequest(new { success = false, message = "Update failed" });
         }
 
         [HttpDelete("DeletePromocode/{id}")]
         public IActionResult DeletePromocode(int id)
         {
             if (_bal.DeletePromocode(id))
-                return Ok("Promocode deleted successfully");
-            return NotFound("Promocode not found");
+                return Ok(new { success = true, message = "Promocode deleted successfully" });
+            return NotFound(new { success = false, message = "Promocode not found" });
         }
     }
-
 }
