@@ -46,44 +46,38 @@ namespace CulinaryCart.Controllers
             });
         }
 
-        // POST: api/charge
+        // Add
         [HttpPost]
         public IActionResult AddCharge([FromBody] AddChargeRequest request)
         {
             if (request == null) return BadRequest("Request cannot be null.");
             if (string.IsNullOrWhiteSpace(request.ChargeType))
                 return BadRequest("ChargeType cannot be empty.");
-
-            // sanitize "3%" → 3
-            var cleaned = request.Value.Replace("%", "").Trim();
-            if (!decimal.TryParse(cleaned, out var numericValue))
-                return BadRequest("Invalid value format.");
+            if (request.Value <= 0)
+                return BadRequest("Value must be greater than zero.");
 
             var created = _chargeBal.AddCharge(new Charge
             {
                 ChargeType = request.ChargeType,
-                Value = numericValue,
+                Value = request.Value,   // ✅ already decimal
                 IsActive = request.IsActive
             });
             return Ok(new { message = "Charge Saved successfully" });
         }
 
-        // PUT: api/charge/{id}
+        // Update
         [HttpPut("{id:int}")]
         public IActionResult UpdateCharge(int id, [FromBody] UpdateChargeRequest request)
         {
             if (request == null) return BadRequest("Request cannot be null.");
             if (id != request.ChargeId) return BadRequest("ID mismatch.");
-
-            var cleaned = request.Value.Replace("%", "").Trim();
-            if (!decimal.TryParse(cleaned, out var numericValue))
-                return BadRequest("Invalid value format.");
+            if (request.Value <= 0) return BadRequest("Value must be greater than zero.");
 
             var success = _chargeBal.UpdateCharge(new Charge
             {
                 ChargeId = request.ChargeId,
                 ChargeType = request.ChargeType,
-                Value = numericValue,
+                Value = request.Value,   // ✅ already decimal
                 IsActive = request.IsActive
             });
 
@@ -91,7 +85,8 @@ namespace CulinaryCart.Controllers
             return Ok(new { message = "Charge updated successfully" });
         }
 
-        // DELETE: api/charge/{id}
+
+        // DELETE
         [HttpDelete("{id:int}")]
         public IActionResult DeleteCharge(int id)
         {

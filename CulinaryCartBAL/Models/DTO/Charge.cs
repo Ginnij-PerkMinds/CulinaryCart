@@ -11,7 +11,7 @@
     public class AddChargeRequest
     {
         public string ChargeType { get; set; }
-        public string Value { get; set; }   
+        public decimal Value { get; set; }   
         public bool IsActive { get; set; }
     }
 
@@ -19,7 +19,7 @@
     {
         public int ChargeId { get; set; }
         public string ChargeType { get; set; }
-        public string Value { get; set; }   
+        public decimal Value { get; set; }   
         public bool IsActive { get; set; }
     }
 }
