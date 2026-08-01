@@ -1,7 +1,11 @@
 ﻿using CulinaryCart.CulinaryCartBAL.Constants;
+using CulinaryCart.CulinaryCartBAL.Models.DTO;
+using CulinaryCart.CulinaryCartBAL.Models.DTO.CulinaryCart.CulinaryCartBAL.DTOs;
 using CulinaryCart.CulinaryCartBAL.Repositories;
+using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryCartDAL.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 
 namespace CulinaryCart.Controllers
 {
@@ -12,12 +16,16 @@ namespace CulinaryCart.Controllers
         private readonly CartBAL _cartBal;
         private readonly MenuDAL _menuDal;
         private readonly OrderHistoryDAL _orderHistoryDal;
+        private readonly PromocodeDAL _promoDal;
+        private readonly ChargeDAL _chargeDal;
 
-        public CartController(CartBAL cartBal, MenuDAL menuDal, OrderHistoryDAL orderHistoryDal)
+        public CartController(CartBAL cartBal, MenuDAL menuDal, OrderHistoryDAL orderHistoryDal, PromocodeDAL promoDal, ChargeDAL chargeDal)
         {
             _cartBal = cartBal;
             _menuDal = menuDal;
             _orderHistoryDal = orderHistoryDal;
+            _promoDal = promoDal;
+            _chargeDal = chargeDal;
         }
 
         private int GetUserIdFromToken()
@@ -41,6 +49,8 @@ namespace CulinaryCart.Controllers
             _cartBal.AddItem(userId, foodItemId, qty);
             return Ok(CulinaryCartConstants.Messages.ItemAdded);
         }
+
+
 
         // Update item in cart
         [HttpPut("update")]
@@ -70,37 +80,80 @@ namespace CulinaryCart.Controllers
             return Ok(CulinaryCartConstants.Messages.ItemRemoved);
         }
 
-        // View cart
+        // View cart with breakdown
         [HttpGet("view")]
-        public IActionResult ViewCart()
+        public IActionResult ViewCart([FromQuery] string promoCode = null)
         {
             int userId = GetUserIdFromToken();
             var items = _cartBal.GetCartItems(userId);
 
             if (items == null || !items.Any())
-                return Ok(new { Message = CulinaryCartConstants.Messages.CartisEmpty });
+                return Ok(new CartResponseDto { Message = CulinaryCartConstants.Messages.CartisEmpty });
 
-            return Ok(items);
+            var baseAmount = items.Sum(i => i.FinalPrice);
+
+            // ✅ Get full calculation result object
+            var calcResult = _cartBal.CalculateFinalAmount(baseAmount, promoCode);
+
+            return Ok(new CartResponseDto
+            {
+                Items = items.Select(i => new CartItemDto
+                {
+                    FoodItemId = i.FoodItemId,
+                    FoodItemName = i.FoodItemName,
+                    Quantity = i.Quantity,
+                    FinalPrice = i.FinalPrice
+                }).ToList(),
+                BaseAmount = calcResult.BaseAmount,
+                PromoDiscount = calcResult.PromoDiscount,
+                Charges = new List<CartChargeDto>
+        {
+            new CartChargeDto { ChargeType = "HandlingFee", Value = calcResult.HandlingFee },
+            new CartChargeDto { ChargeType = "DeliveryFee", Value = calcResult.DeliveryFee },
+            new CartChargeDto { ChargeType = "Tax", Value = calcResult.TaxAmount }
+        },
+                FinalAmount = calcResult.FinalAmount,
+                AppliedPromoCode = calcResult.AppliedPromoCode,
+                Message = "Cart retrieved successfully."
+            });
         }
 
-        // Checkout
+        // Checkout with breakdown
         [HttpPost("checkout")]
-        public IActionResult Checkout()
+        public IActionResult Checkout([FromQuery] string promoCode = null)
         {
             int userId = GetUserIdFromToken();
-            var order = _cartBal.Checkout(userId);
+            var order = _cartBal.Checkout(userId, promoCode);
 
             if (order == null)
                 return BadRequest("Cart is empty.");
 
-            return Ok(new
+            var charges = new List<CartChargeDto>
             {
-                OrderId = order.OrderId,
-                TotalAmount = order.TotalAmount,
+                new CartChargeDto { ChargeType = "HandlingFee", Value = order.HandlingFee },
+                new CartChargeDto { ChargeType = "DeliveryFee", Value = order.DeliveryFee },
+                new CartChargeDto { ChargeType = "Tax", Value = order.TaxAmount }
+            };
+
+            return Ok(new CartResponseDto
+            {
+                Items = order.OrderItems.Select(i => new CartItemDto
+                {
+                    FoodItemId = i.FoodItemId,
+                    FoodItemName = i.FoodItemName,
+                    Quantity = i.Quantity,
+                    FinalPrice = i.FinalPrice
+                }).ToList(),
+                BaseAmount = order.BaseAmount,
+                PromoDiscount = order.PromoDiscount,
+                Charges = charges,
+                FinalAmount = order.FinalAmount,
+                AppliedPromoCode = order.AppliedPromoCode,
                 Message = CulinaryCartConstants.Messages.CheckoutSuccessful
             });
         }
 
+        // Order history by user
         [HttpGet("order-history/{userId}")]
         public IActionResult GetOrderHistoryByUser(int userId)
         {
@@ -111,7 +164,13 @@ namespace CulinaryCart.Controllers
                 {
                     o.OrderId,
                     o.OrderDate,
-                    o.TotalAmount,
+                    o.BaseAmount,
+                    o.PromoDiscount,
+                    o.HandlingFee,
+                    o.DeliveryFee,
+                    o.TaxAmount,
+                    o.FinalAmount,
+                    o.AppliedPromoCode,
                     Items = o.OrderItems.Select(i => new
                     {
                         i.FoodItemName,
@@ -127,12 +186,11 @@ namespace CulinaryCart.Controllers
             return Ok(orders);
         }
 
-
+        // My orders
         [HttpGet("my-orders")]
         public IActionResult GetMyOrders()
         {
             int userId = GetUserIdFromToken();
-
             var indiaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
 
             var orders = _orderHistoryDal.GetByUser(userId)
@@ -142,7 +200,13 @@ namespace CulinaryCart.Controllers
                 {
                     o.OrderId,
                     OrderDate = TimeZoneInfo.ConvertTimeFromUtc(o.OrderDate, indiaTimeZone),
-                    o.TotalAmount,
+                    o.BaseAmount,
+                    o.PromoDiscount,
+                    o.HandlingFee,
+                    o.DeliveryFee,
+                    o.TaxAmount,
+                    o.FinalAmount,
+                    o.AppliedPromoCode,
                     Items = o.OrderItems.Select(i => new
                     {
                         i.FoodItemName,
@@ -165,7 +229,7 @@ namespace CulinaryCart.Controllers
             var orders = _orderHistoryDal.GetCheckedOutOrders();
 
             var totalOrders = orders.Count;
-            var totalRevenue = orders.Sum(o => o.TotalAmount);
+            var totalRevenue = orders.Sum(o => o.FinalAmount);
 
             var topItems = orders
                 .SelectMany(o => o.OrderItems)
@@ -194,15 +258,15 @@ namespace CulinaryCart.Controllers
             var orders = _orderHistoryDal.GetCheckedOutOrders();
 
             var revenueByDate = orders
-                .GroupBy(o => o.OrderDate.Date)
-                .Select(g => new
-                {
-                    Date = g.Key.ToString("dd/MM"),
-                    TotalRevenue = g.Sum(o => o.TotalAmount),
-                    DateValue = g.Key
-                })
-                .OrderBy(g => g.DateValue)
-                .ToList();
+               .GroupBy(o => o.OrderDate.Date)
+               .Select(g => new
+               {
+                   Date = g.Key.ToString("dd/MM"),
+                   TotalRevenue = g.Sum(o => o.FinalAmount),
+                   DateValue = g.Key
+               })
+               .OrderBy(g => g.DateValue)
+               .ToList();
 
             return Ok(revenueByDate);
         }

@@ -1,4 +1,5 @@
 ﻿using CulinaryCart.CulinaryCartBAL.Constants;
+using CulinaryCart.CulinaryCartBAL.Models.DTO.CulinaryCart.CulinaryCartBAL.DTOs;
 using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryCartDAL.Repositories;
 using System;
@@ -11,14 +12,18 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
     {
         private readonly MenuDAL _menuDal;
         private readonly OrderHistoryDAL _orderHistoryDal;
+        private readonly ChargeDAL _chargeDal;
+        private readonly PromocodeDAL _promoDal;
 
-        public CartBAL(MenuDAL menuDal, OrderHistoryDAL orderHistoryDal)
+        public CartBAL(MenuDAL menuDal, OrderHistoryDAL orderHistoryDal, ChargeDAL chargeDal, PromocodeDAL promoDal)
         {
             _menuDal = menuDal;
             _orderHistoryDal = orderHistoryDal;
+            _chargeDal = chargeDal;
+            _promoDal = promoDal;
         }
 
-        // Business logic for offers/discounts
+        // Business logic for offers/discounts on menu items
         public decimal CalculateFinalPrice(Menu menuItem, int qty)
         {
             if (menuItem == null) return 0;
@@ -56,6 +61,65 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             return finalPrice;
         }
 
+        // Calculate final amount with promo + charges
+        public CartCalculationResult CalculateFinalAmount(decimal baseAmount, string promoCode)
+        {
+            decimal promoDiscount = 0;
+            string appliedPromoCode = null;
+            bool freeDelivery = false;
+
+            if (!string.IsNullOrWhiteSpace(promoCode))
+            {
+                var promo = _promoDal.GetAllPromocodes()
+                    .FirstOrDefault(p => p.PromoCodeName.Equals(promoCode, StringComparison.OrdinalIgnoreCase));
+
+                if (promo != null && promo.IsActive && promo.UsageCount > 0 && baseAmount >= promo.Criteria)
+                {
+                    var amount = promo.Amount ?? 0m;
+                    promoDiscount = amount >= 1 ? amount : baseAmount * amount;
+                    appliedPromoCode = promo.PromoCodeName;
+
+                    if (promo.FreeDelivery)
+                        freeDelivery = true;
+
+                    promo.UsageCount -= 1;
+                    _promoDal.UpdatePromocode(promo.Id, promo);
+                }
+            }
+
+            decimal handlingFee = 0, deliveryFee = 0, taxAmount = 0;
+            var charges = _chargeDal.GetAllCharges().Where(c => c.IsActive).ToList();
+
+            foreach (var c in charges)
+            {
+                switch (c.ChargeType.ToUpper())
+                {
+                    case "HANDLING FEE":
+                        handlingFee += baseAmount * c.Value;
+                        break;
+                    case "DELIVERY FEE":
+                        deliveryFee += freeDelivery ? 0 : baseAmount * c.Value;
+                        break;
+                    case "COLLECTIBLE TAX":
+                        taxAmount += baseAmount * c.Value;
+                        break;
+                }
+            }
+
+            var finalAmount = baseAmount - promoDiscount + handlingFee + deliveryFee + taxAmount;
+
+            return new CartCalculationResult
+            {
+                BaseAmount = baseAmount,
+                PromoDiscount = promoDiscount,
+                AppliedPromoCode = appliedPromoCode,
+                HandlingFee = handlingFee,
+                DeliveryFee = deliveryFee,
+                TaxAmount = taxAmount,
+                FinalAmount = finalAmount
+            };
+        }
+
         // Add item to cart
         public void AddItem(int userId, int foodItemId, int qty)
         {
@@ -71,9 +135,20 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 {
                     UserId = userId,
                     OrderDate = DateTime.UtcNow,
-                    Status = CulinaryCartConstants.Status.InCart
+                    Status = CulinaryCartConstants.Status.InCart,
+                    OrderItems = new List<OrderItem>() // ✅ initialize
                 };
+                _orderHistoryDal.Add(order);
+            }
 
+            var existingItem = order.OrderItems.FirstOrDefault(i => i.FoodItemId == foodItemId);
+            if (existingItem != null)
+            {
+                existingItem.Quantity += qty;
+                existingItem.FinalPrice = CalculateFinalPrice(menuItem, existingItem.Quantity);
+            }
+            else
+            {
                 order.OrderItems.Add(new OrderItem
                 {
                     FoodItemId = foodItemId,
@@ -82,33 +157,11 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                     Price = menuItem.Price,
                     FinalPrice = CalculateFinalPrice(menuItem, qty)
                 });
-
-                order.TotalAmount = order.OrderItems.Sum(i => i.FinalPrice);
-                _orderHistoryDal.Add(order);   // persist new order
             }
-            else
-            {
-                var existingItem = order.OrderItems.FirstOrDefault(i => i.FoodItemId == foodItemId);
-                if (existingItem != null)
-                {
-                    existingItem.Quantity += qty;
-                    existingItem.FinalPrice = CalculateFinalPrice(menuItem, existingItem.Quantity);
-                }
-                else
-                {
-                    order.OrderItems.Add(new OrderItem
-                    {
-                        FoodItemId = foodItemId,
-                        FoodItemName = menuItem.FoodItemName,
-                        Quantity = qty,
-                        Price = menuItem.Price,
-                        FinalPrice = CalculateFinalPrice(menuItem, qty)
-                    });
-                }
 
-                order.TotalAmount = order.OrderItems.Sum(i => i.FinalPrice);
-                _orderHistoryDal.Update(order);   // update existing order
-            }
+            order.BaseAmount = order.OrderItems.Sum(i => i.FinalPrice);
+            order.TotalAmount = order.BaseAmount;
+            _orderHistoryDal.Update(order);
         }
 
         // Update item in cart
@@ -128,10 +181,11 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                     item.Quantity = qty;
                     item.FinalPrice = CalculateFinalPrice(menuItem, qty);
                 }
-
-                order.TotalAmount = order.OrderItems.Sum(i => i.FinalPrice);
-                _orderHistoryDal.Update(order);
             }
+
+            order.BaseAmount = order.OrderItems.Sum(i => i.FinalPrice);
+            order.TotalAmount = order.BaseAmount;
+            _orderHistoryDal.Update(order);
         }
 
         // Delete item from cart
@@ -146,10 +200,11 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             if (item != null)
             {
                 order.OrderItems.Remove(item);
-                order.TotalAmount = order.OrderItems.Any()
+                order.BaseAmount = order.OrderItems.Any()
                     ? order.OrderItems.Sum(i => i.FinalPrice)
                     : 0;
 
+                order.TotalAmount = order.BaseAmount;
                 _orderHistoryDal.Update(order);
             }
         }
@@ -163,7 +218,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             return order?.OrderItems ?? new List<OrderItem>();
         }
 
-        // Calculate total cart value
+        // Calculate total cart value (without charges/promo)
         public decimal CalculateCartTotal(int userId)
         {
             var items = GetCartItems(userId);
@@ -179,13 +234,14 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             if (order != null)
             {
                 order.OrderItems.Clear();
+                order.BaseAmount = 0;
                 order.TotalAmount = 0;
                 _orderHistoryDal.Update(order);
             }
         }
 
-        // Checkout
-        public Order Checkout(int userId)
+        // Checkout with charges + promo
+        public Order Checkout(int userId, string promoCode = null)
         {
             var order = _orderHistoryDal.GetByUser(userId)
                 .FirstOrDefault(o => o.Status == CulinaryCartConstants.Status.InCart);
@@ -193,6 +249,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             if (order == null || !order.OrderItems.Any())
                 return null;
 
+            // Reduce stock
             foreach (var item in order.OrderItems)
             {
                 var menuItem = _menuDal.GetItem(item.FoodItemId);
@@ -210,7 +267,63 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
 
             order.Status = CulinaryCartConstants.Status.CheckedOut;
             order.OrderDate = DateTime.UtcNow;
-            order.TotalAmount = order.OrderItems.Sum(i => i.FinalPrice);
+
+            // Base amount
+            order.BaseAmount = order.OrderItems.Sum(i => i.FinalPrice);
+
+            // Promo discount
+            order.PromoDiscount = 0;
+            order.AppliedPromoCode = null;
+            bool freeDelivery = false;
+
+            if (!string.IsNullOrWhiteSpace(promoCode))
+            {
+                var promo = _promoDal.GetAllPromocodes()
+                    .FirstOrDefault(p => p.PromoCodeName.Equals(promoCode, StringComparison.OrdinalIgnoreCase));
+
+                if (promo != null && promo.IsActive && promo.UsageCount > 0 && order.BaseAmount >= promo.Criteria)
+                {
+                    var amount = promo.Amount ?? 0m;
+                    order.PromoDiscount = amount >= 1 ? amount : order.BaseAmount * amount;
+
+                    order.AppliedPromoCode = promo.PromoCodeName;
+
+                    if (promo.FreeDelivery)
+                        freeDelivery = true;
+
+                    promo.UsageCount -= 1;
+                    _promoDal.UpdatePromocode(promo.Id, promo);
+                }
+            }
+
+            // Charges
+            order.HandlingFee = 0;
+            order.DeliveryFee = 0;
+            order.TaxAmount = 0;
+
+            var charges = _chargeDal.GetAllCharges().Where(c => c.IsActive).ToList();
+            foreach (var charge in charges)
+            {
+                switch (charge.ChargeType.ToUpper())
+                {
+                    case "HANDLING FEE":
+                        order.HandlingFee += order.BaseAmount * charge.Value;
+                        break;
+                    case "DELIVERY FEE":
+                        order.DeliveryFee += freeDelivery ? 0 : order.BaseAmount * charge.Value;
+                        break;
+                    case "COLLECTIBLE TAX":
+                        order.TaxAmount += order.BaseAmount * charge.Value;
+                        break;
+                }
+            }
+
+            // Final total
+            order.FinalAmount = order.BaseAmount - order.PromoDiscount
+                                + order.HandlingFee + order.DeliveryFee + order.TaxAmount;
+
+            // Keep legacy TotalAmount in sync
+            order.TotalAmount = order.FinalAmount;
 
             _orderHistoryDal.Update(order);
 
