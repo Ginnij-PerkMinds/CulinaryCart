@@ -68,10 +68,19 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             string appliedPromoCode = null;
             bool freeDelivery = false;
 
+            Console.WriteLine($"[CalculateFinalAmount] BaseAmount: {baseAmount}, PromoCode: {promoCode}");
+
             if (!string.IsNullOrWhiteSpace(promoCode))
             {
                 var promo = _promoDal.GetAllPromocodes()
                     .FirstOrDefault(p => p.PromoCodeName.Equals(promoCode, StringComparison.OrdinalIgnoreCase));
+
+                Console.WriteLine($"[CalculateFinalAmount] Promo found: {promo != null}");
+
+                if (promo != null)
+                {
+                    Console.WriteLine($"[CalculateFinalAmount] Promo details - IsActive: {promo.IsActive}, UsageCount: {promo.UsageCount}, Criteria: {promo.Criteria}, Amount: {promo.Amount}");
+                }
 
                 if (promo != null && promo.IsActive && promo.UsageCount > 0 && baseAmount >= promo.Criteria)
                 {
@@ -79,11 +88,21 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                     promoDiscount = amount >= 1 ? amount : baseAmount * amount;
                     appliedPromoCode = promo.PromoCodeName;
 
+                    Console.WriteLine($"[CalculateFinalAmount] ✅ Promo applied - PromoDiscount: {promoDiscount}, AppliedCode: {appliedPromoCode}");
+
                     if (promo.FreeDelivery)
                         freeDelivery = true;
-
-                    promo.UsageCount -= 1;
-                    _promoDal.UpdatePromocode(promo.Id, promo);
+                }
+                else
+                {
+                    if (promo == null)
+                        Console.WriteLine($"[CalculateFinalAmount] ❌ Promo not found");
+                    else if (!promo.IsActive)
+                        Console.WriteLine($"[CalculateFinalAmount] ❌ Promo not active");
+                    else if (promo.UsageCount <= 0)
+                        Console.WriteLine($"[CalculateFinalAmount] ❌ Promo usage count exhausted");
+                    else if (baseAmount < promo.Criteria)
+                        Console.WriteLine($"[CalculateFinalAmount] ❌ BaseAmount ({baseAmount}) < Criteria ({promo.Criteria})");
                 }
             }
 
@@ -108,6 +127,8 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
 
             var finalAmount = baseAmount - promoDiscount + handlingFee + deliveryFee + taxAmount;
 
+            Console.WriteLine($"[CalculateFinalAmount] Final - HandlingFee: {handlingFee}, DeliveryFee: {deliveryFee}, TaxAmount: {taxAmount}, FinalAmount: {finalAmount}");
+
             return new CartCalculationResult
             {
                 BaseAmount = baseAmount,
@@ -118,6 +139,22 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 TaxAmount = taxAmount,
                 FinalAmount = finalAmount
             };
+        }
+
+        // 🔹 Helper to persist charges + promo + final amount into DB
+        private void UpdateOrderTotals(Order order, string promoCode = null)
+        {
+            order.BaseAmount = order.OrderItems.Sum(i => i.FinalPrice);
+
+            var calc = CalculateFinalAmount(order.BaseAmount, promoCode ?? order.AppliedPromoCode);
+
+            order.PromoDiscount = calc.PromoDiscount;
+            order.AppliedPromoCode = calc.AppliedPromoCode;
+            order.HandlingFee = calc.HandlingFee;
+            order.DeliveryFee = calc.DeliveryFee;
+            order.TaxAmount = calc.TaxAmount;
+            order.FinalAmount = calc.FinalAmount;
+            order.TotalAmount = calc.FinalAmount;
         }
 
         // Add item to cart
@@ -136,7 +173,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                     UserId = userId,
                     OrderDate = DateTime.UtcNow,
                     Status = CulinaryCartConstants.Status.InCart,
-                    OrderItems = new List<OrderItem>() // ✅ initialize
+                    OrderItems = new List<OrderItem>()
                 };
                 _orderHistoryDal.Add(order);
             }
@@ -159,8 +196,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 });
             }
 
-            order.BaseAmount = order.OrderItems.Sum(i => i.FinalPrice);
-            order.TotalAmount = order.BaseAmount;
+            UpdateOrderTotals(order);
             _orderHistoryDal.Update(order);
         }
 
@@ -183,8 +219,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 }
             }
 
-            order.BaseAmount = order.OrderItems.Sum(i => i.FinalPrice);
-            order.TotalAmount = order.BaseAmount;
+            UpdateOrderTotals(order);
             _orderHistoryDal.Update(order);
         }
 
@@ -200,13 +235,35 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             if (item != null)
             {
                 order.OrderItems.Remove(item);
-                order.BaseAmount = order.OrderItems.Any()
-                    ? order.OrderItems.Sum(i => i.FinalPrice)
-                    : 0;
-
-                order.TotalAmount = order.BaseAmount;
-                _orderHistoryDal.Update(order);
             }
+
+            UpdateOrderTotals(order);
+            _orderHistoryDal.Update(order);
+        }
+
+        // Apply promo explicitly
+        public void ApplyPromo(int userId, string promoCode)
+        {
+            var order = _orderHistoryDal.GetByUser(userId)
+                .FirstOrDefault(o => o.Status == CulinaryCartConstants.Status.InCart);
+
+            Console.WriteLine($"[CartBAL.ApplyPromo] UserId: {userId}, PromoCode: {promoCode}, Order found: {order != null}");
+
+            if (order == null) 
+            {
+                Console.WriteLine($"[CartBAL.ApplyPromo] No InCart order found for userId {userId}");
+                return;
+            }
+
+            Console.WriteLine($"[CartBAL.ApplyPromo] Before UpdateOrderTotals - OrderId: {order.OrderId}, BaseAmount: {order.BaseAmount}");
+
+            UpdateOrderTotals(order, promoCode);
+
+            Console.WriteLine($"[CartBAL.ApplyPromo] After UpdateOrderTotals - AppliedPromoCode: {order.AppliedPromoCode}, PromoDiscount: {order.PromoDiscount}, FinalAmount: {order.FinalAmount}");
+
+            _orderHistoryDal.Update(order);
+
+            Console.WriteLine($"[CartBAL.ApplyPromo] Order saved to DB - AppliedPromoCode: {order.AppliedPromoCode}");
         }
 
         // Get cart items
@@ -218,13 +275,6 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             return order?.OrderItems ?? new List<OrderItem>();
         }
 
-        // Calculate total cart value (without charges/promo)
-        public decimal CalculateCartTotal(int userId)
-        {
-            var items = GetCartItems(userId);
-            return items.Sum(i => i.FinalPrice);
-        }
-
         // Clear cart
         public void ClearCart(int userId)
         {
@@ -234,14 +284,11 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             if (order != null)
             {
                 order.OrderItems.Clear();
-                order.BaseAmount = 0;
-                order.TotalAmount = 0;
+                UpdateOrderTotals(order);
                 _orderHistoryDal.Update(order);
             }
         }
-
-        // Checkout with charges + promo
-        public Order Checkout(int userId, string promoCode = null)
+        public Order Checkout(int userId)
         {
             var order = _orderHistoryDal.GetByUser(userId)
                 .FirstOrDefault(o => o.Status == CulinaryCartConstants.Status.InCart);
@@ -265,72 +312,17 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 }
             }
 
+            // ✅ Just finalize status and date
             order.Status = CulinaryCartConstants.Status.CheckedOut;
             order.OrderDate = DateTime.UtcNow;
 
-            // Base amount
-            order.BaseAmount = order.OrderItems.Sum(i => i.FinalPrice);
-
-            // Promo discount
-            order.PromoDiscount = 0;
-            order.AppliedPromoCode = null;
-            bool freeDelivery = false;
-
-            if (!string.IsNullOrWhiteSpace(promoCode))
-            {
-                var promo = _promoDal.GetAllPromocodes()
-                    .FirstOrDefault(p => p.PromoCodeName.Equals(promoCode, StringComparison.OrdinalIgnoreCase));
-
-                if (promo != null && promo.IsActive && promo.UsageCount > 0 && order.BaseAmount >= promo.Criteria)
-                {
-                    var amount = promo.Amount ?? 0m;
-                    order.PromoDiscount = amount >= 1 ? amount : order.BaseAmount * amount;
-
-                    order.AppliedPromoCode = promo.PromoCodeName;
-
-                    if (promo.FreeDelivery)
-                        freeDelivery = true;
-
-                    promo.UsageCount -= 1;
-                    _promoDal.UpdatePromocode(promo.Id, promo);
-                }
-            }
-
-            // Charges
-            order.HandlingFee = 0;
-            order.DeliveryFee = 0;
-            order.TaxAmount = 0;
-
-            var charges = _chargeDal.GetAllCharges().Where(c => c.IsActive).ToList();
-            foreach (var charge in charges)
-            {
-                switch (charge.ChargeType.ToUpper())
-                {
-                    case "HANDLING FEE":
-                        order.HandlingFee += order.BaseAmount * charge.Value;
-                        break;
-                    case "DELIVERY FEE":
-                        order.DeliveryFee += freeDelivery ? 0 : order.BaseAmount * charge.Value;
-                        break;
-                    case "COLLECTIBLE TAX":
-                        order.TaxAmount += order.BaseAmount * charge.Value;
-                        break;
-                }
-            }
-
-            // Final total
-            order.FinalAmount = order.BaseAmount - order.PromoDiscount
-                                + order.HandlingFee + order.DeliveryFee + order.TaxAmount;
-
-            // Keep legacy TotalAmount in sync
-            order.TotalAmount = order.FinalAmount;
-
             _orderHistoryDal.Update(order);
 
-            // Clear cart after checkout
+            // Clear cart reference
             this.ClearCart(userId);
 
             return order;
         }
+
     }
 }

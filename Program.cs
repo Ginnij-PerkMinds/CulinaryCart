@@ -128,7 +128,7 @@ internal class Program
         app.UseHttpsRedirection();
         app.UseAuthentication();   // <-- added 24-06
         app.UseAuthorization();
-        app.UseMiddleware<TokenValidationMiddleware>();
+        //app.UseMiddleware<TokenValidationMiddleware>();
         app.MapControllers();
         app.Run();
     }

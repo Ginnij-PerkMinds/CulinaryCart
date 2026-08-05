@@ -87,7 +87,7 @@ public class UserBAL
         var claims = new[]
         {
             new Claim("UserId", user.UserId.ToString()),
-            new Claim("EmailId", user.EmailId),
+            new Claim("Email", user.EmailId),
             new Claim("IsAdmin", user.IsAdmin.ToString())
         };
 
@@ -103,7 +103,7 @@ public class UserBAL
             issuer: issuer,
             audience: audience,
             claims: claims,
-            expires: DateTime.Now.AddHours(1),
+            expires: DateTime.UtcNow.AddHours(1),
             signingCredentials: creds
         );
 

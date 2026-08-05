@@ -35,8 +35,13 @@ namespace CulinaryCart.CulinaryCartDAL.Models
 
         public string? AppliedPromoCode { get; set; }    // Track which promo code was used
 
+        public string? RazorpayOrderId { get; set; }
+        public string? PaymentId { get; set; }
+
         // Items in the order
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
+        
     }
 }
 
