@@ -96,6 +96,7 @@ internal class Program
         builder.Services.AddScoped<UserDAL>();
         builder.Services.AddScoped<PromocodeDAL>();
         builder.Services.AddScoped<ChargeDAL>();
+        builder.Services.AddScoped<RefundDAL>();
 
         builder.Services.AddScoped<MenuBAL>();
         builder.Services.AddScoped<CartBAL>();
@@ -103,6 +104,7 @@ internal class Program
         builder.Services.AddScoped<PromocodeBAL>();
         builder.Services.AddScoped<ChargeBAL>();
         builder.Services.AddScoped<OrdersBAL>();
+        builder.Services.AddScoped<RefundsBAL>();
 
         builder.Services.AddScoped<IImageFAL, ImageFAL>();
 

@@ -1,0 +1,27 @@
+﻿namespace CulinaryCart.CulinaryCartBAL.Models.DTO
+{
+    // Basic refund info
+    public class RefundDto
+    {
+        public int RefundId { get; set; }
+        public DateTime RequestDate { get; set; }
+        public string Username { get; set; }
+        public string Address { get; set; }
+        public string PhoneNo { get; set; }
+        public decimal FinalAmount { get; set; }
+        public string RefundStatus { get; set; }
+        public string? Remarks { get; set; }
+    }
+
+    // Detailed refund info
+    public class RefundDetailsDto : RefundDto
+    {
+        public int OrderId { get; set; }   // link back to original order
+        public decimal BaseAmount { get; set; }
+        public decimal PromoDiscount { get; set; }
+        public decimal HandlingFee { get; set; }
+        public decimal DeliveryFee { get; set; }
+        public decimal TaxAmount { get; set; }
+        public List<OrderItemDto> OrderItems { get; set; } = new();
+    }
+}

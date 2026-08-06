@@ -19,6 +19,7 @@ public class CulinaryCartDbContext : DbContext
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<Promocode> Promocode { get; set; } 
     public DbSet<Charge> Charge { get; set; }
+    public DbSet<Refund> Refunds { get; set; }  // added for refund management
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -90,5 +91,16 @@ public class CulinaryCartDbContext : DbContext
         modelBuilder.Entity<Charge>()
             .Property(c => c.IsActive)
             .HasDefaultValue(false);
-      }
+
+        // Refunds
+        modelBuilder.Entity<Refund>()
+               .HasOne(r => r.Order)
+               .WithMany() // or WithOne if you want one refund per order
+               .HasForeignKey(r => r.OrderId);
+
+        modelBuilder.Entity<Refund>()
+            .HasOne(r => r.User)
+            .WithMany()
+            .HasForeignKey(r => r.UserId);
+    }
     }
