@@ -11,4 +11,8 @@
         public bool IsActive { get; set; }
     }
 
+    public class ApplyPromoRequest
+    {
+        public string PromoCode { get; set; }
+    }
 }

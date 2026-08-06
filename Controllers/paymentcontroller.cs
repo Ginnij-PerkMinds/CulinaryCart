@@ -1,5 +1,6 @@
 ﻿using CulinaryCart.CulinaryCartBAL.Constants;
 using CulinaryCart.CulinaryCartBAL.Models.DTO;
+using CulinaryCart.CulinaryCartBAL.Models.DTO.CulinaryCart.CulinaryCartBAL.DTOs;
 using CulinaryCart.CulinaryCartBAL.Repositories;
 using CulinaryCart.CulinaryCartDAL.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -17,12 +18,15 @@ namespace CulinaryCart.Controllers
     {
         private readonly OrderHistoryDAL _orderHistoryDal;
         private readonly IConfiguration _configuration;
+        private readonly CartBAL _cartBal;
 
-        public PaymentController(OrderHistoryDAL orderHistoryDal, IConfiguration configuration)
+        public PaymentController(OrderHistoryDAL orderHistoryDal, IConfiguration configuration, CartBAL cartBal)
         {
             _orderHistoryDal = orderHistoryDal;
             _configuration = configuration;
+            _cartBal = cartBal;
         }
+           
 
         private int GetUserIdFromToken()
         {
@@ -32,28 +36,24 @@ namespace CulinaryCart.Controllers
             return int.Parse(userIdClaim.Value);
         }
 
-        // Razorpay order response DTO
-        public class RazorpayOrderResponse
-        {
-            public string id { get; set; }
-            public int amount { get; set; }
-            public string currency { get; set; }
-        }
-
         [HttpPost("create-order")]
         public async Task<IActionResult> CreateOrder()
         {
             int userId = GetUserIdFromToken();
 
+            // Fetch active InCart order
             var order = _orderHistoryDal.GetByUser(userId)
                         .OrderByDescending(o => o.OrderDate)
-                        .FirstOrDefault(o => o.Status == CulinaryCartConstants.Status.InCart
-                                          || o.Status == CulinaryCartConstants.Status.CheckedOut);
+                        .FirstOrDefault(o => o.Status == CulinaryCartConstants.Status.InCart);
 
             if (order == null || !order.OrderItems.Any())
                 return BadRequest("Cart is empty.");
 
-            // ✅ FinalAmount is already seeded in DB by CartBAL
+            // Reload from DB to avoid stale entity
+            order = _orderHistoryDal.GetById(order.OrderId);
+
+            Console.WriteLine($"[DB Check Before Razorpay] OrderId={order.OrderId}, FinalAmount={order.FinalAmount}, Promo={order.AppliedPromoCode}, Discount={order.PromoDiscount}");
+
             var finalAmount = order.FinalAmount;
             var amountPaise = Convert.ToInt32(Math.Round(finalAmount * 100));
 
@@ -79,21 +79,36 @@ namespace CulinaryCart.Controllers
 
             var razorpayOrder = await response.Content.ReadFromJsonAsync<RazorpayOrderResponse>();
 
-            // ✅ Return order details + Razorpay info
-            return Ok(new
+            // Persist RazorpayOrderId in DB
+            order.RazorpayOrderId = razorpayOrder.id;
+            _orderHistoryDal.Update(order);
+
+            // Build typed response
+            var responseDto = new PaymentOrderResponseDto
             {
                 RazorpayOrderId = razorpayOrder.id,
                 Amount = razorpayOrder.amount, // paise
-                Currency = razorpayOrder.currency,
-                FinalAmount = finalAmount,     // rupees
-                Items = order.OrderItems.Select(i => new
+                Dto = new PaymentRequestDto
                 {
-                    i.FoodItemId,
-                    i.FoodItemName,
-                    i.Quantity,
-                    i.FinalPrice
-                })
-            });
+                    BaseAmount = order.BaseAmount,
+                    PromoDiscount = order.PromoDiscount,
+                    AppliedPromoCode = order.AppliedPromoCode,
+                    HandlingFee = order.HandlingFee,
+                    DeliveryFee = order.DeliveryFee,
+                    TaxAmount = order.TaxAmount,
+                    FinalAmount = finalAmount,
+                    Currency = razorpayOrder.currency
+                },
+                Items = order.OrderItems.Select(i => new CartItemDto
+                {
+                    FoodItemId = i.FoodItemId,
+                    FoodItemName = i.FoodItemName,
+                    Quantity = i.Quantity,
+                    FinalPrice = i.FinalPrice
+                }).ToList()
+            };
+
+            return Ok(responseDto);
         }
 
         [HttpPost("verify-payment")]
@@ -128,6 +143,16 @@ namespace CulinaryCart.Controllers
                 return BadRequest(new { success = false, message = "Payment verification failed." });
             }
         }
+
+        [HttpPost("finalize-checkout")]
+        public IActionResult FinalizeCheckout()
+        {
+            int userId = GetUserIdFromToken();
+            var order = _cartBal.Checkout(userId);
+            if (order == null)
+                return BadRequest("No active order to finalize.");
+
+            return Ok(new { success = true, message = "Order finalized and stock updated." });
+        }
     }
 }
-

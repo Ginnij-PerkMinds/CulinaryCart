@@ -88,19 +88,31 @@ namespace CulinaryCart.Controllers
         public IActionResult ViewCart([FromQuery] string promoCode = null)
         {
             int userId = GetUserIdFromToken();
-            var items = _cartBal.GetCartItems(userId);
 
-            if (items == null || !items.Any())
+            var order = _orderHistoryDal.GetByUser(userId)
+                        .FirstOrDefault(o => o.Status == CulinaryCartConstants.Status.InCart);
+
+            if (order == null || !order.OrderItems.Any())
                 return Ok(new CartResponseDto { Message = CulinaryCartConstants.Messages.CartisEmpty });
 
-            var baseAmount = items.Sum(i => i.FinalPrice);
+            // Always update totals (persist promo + charges)
+            _cartBal.UpdateOrderTotals(order, promoCode);
+            _orderHistoryDal.Update(order);
 
-            //  Get full calculation result object
-            var calcResult = _cartBal.CalculateFinalAmount(baseAmount, promoCode);
+            var calcResult = new CartCalculationResult
+            {
+                BaseAmount = order.BaseAmount,
+                PromoDiscount = order.PromoDiscount,
+                AppliedPromoCode = order.AppliedPromoCode,
+                HandlingFee = order.HandlingFee,
+                DeliveryFee = order.DeliveryFee,
+                TaxAmount = order.TaxAmount,
+                FinalAmount = order.FinalAmount
+            };
 
             return Ok(new CartResponseDto
             {
-                Items = items.Select(i => new CartItemDto
+                Items = order.OrderItems.Select(i => new CartItemDto
                 {
                     FoodItemId = i.FoodItemId,
                     FoodItemName = i.FoodItemName,
@@ -121,38 +133,48 @@ namespace CulinaryCart.Controllers
             });
         }
 
-        // Checkout with breakdown
-        [HttpPost("checkout")]
-        public IActionResult Checkout([FromQuery] string promoCode = null)
+        // Apply Promo Code to Cart
+        [HttpPost("apply-promo")]
+        public IActionResult ApplyPromo([FromBody] ApplyPromoRequest request)
         {
             int userId = GetUserIdFromToken();
-            var order = _cartBal.Checkout(userId);
 
-            if (order == null)
-                return BadRequest("Cart is empty.");
+            if (string.IsNullOrWhiteSpace(request?.PromoCode))
+                return BadRequest(new { message = "Promo code is required." });
 
-            var charges = new List<CartChargeDto>
-            {
-                new CartChargeDto { ChargeType = "HandlingFee", Value = order.HandlingFee },
-                new CartChargeDto { ChargeType = "DeliveryFee", Value = order.DeliveryFee },
-                new CartChargeDto { ChargeType = "Tax", Value = order.TaxAmount }
-            };
+            _cartBal.ApplyPromo(userId, request.PromoCode);
+
+            // Get updated cart with promo applied
+            var items = _cartBal.GetCartItems(userId);
+
+            if (items == null || !items.Any())
+                return Ok(new CartResponseDto { Message = CulinaryCartConstants.Messages.CartisEmpty });
+
+            var baseAmount = items.Sum(i => i.FinalPrice);
+            var calcResult = _cartBal.CalculateFinalAmount(baseAmount, request.PromoCode);
 
             return Ok(new CartResponseDto
             {
-                Items = order.OrderItems.Select(i => new CartItemDto
+                Items = items.Select(i => new CartItemDto
                 {
                     FoodItemId = i.FoodItemId,
                     FoodItemName = i.FoodItemName,
                     Quantity = i.Quantity,
                     FinalPrice = i.FinalPrice
                 }).ToList(),
-                BaseAmount = order.BaseAmount,
-                PromoDiscount = order.PromoDiscount,
-                Charges = charges,
-                FinalAmount = order.FinalAmount,
-                AppliedPromoCode = order.AppliedPromoCode,
-                Message = CulinaryCartConstants.Messages.CheckoutSuccessful
+                BaseAmount = calcResult.BaseAmount,
+                PromoDiscount = calcResult.PromoDiscount,
+                Charges = new List<CartChargeDto>
+                {
+                    new CartChargeDto { ChargeType = "HandlingFee", Value = calcResult.HandlingFee },
+                    new CartChargeDto { ChargeType = "DeliveryFee", Value = calcResult.DeliveryFee },
+                    new CartChargeDto { ChargeType = "Tax", Value = calcResult.TaxAmount }
+                },
+                FinalAmount = calcResult.FinalAmount,
+                AppliedPromoCode = calcResult.AppliedPromoCode,
+                Message = calcResult.AppliedPromoCode != null
+                    ? $"Promo code '{calcResult.AppliedPromoCode}' applied successfully! Discount: ₹{calcResult.PromoDiscount}"
+                    : "Promo code is invalid or expired."
             });
         }
 
@@ -272,52 +294,6 @@ namespace CulinaryCart.Controllers
                .ToList();
 
             return Ok(revenueByDate);
-        }
-
-        // ✅ Apply Promo Code to Cart
-        [HttpPost("apply-promo")]
-        public IActionResult ApplyPromo([FromBody] ApplyPromoRequest request)
-        {
-            int userId = GetUserIdFromToken();
-
-            if (string.IsNullOrWhiteSpace(request?.PromoCode))
-                return BadRequest(new { message = "Promo code is required." });
-
-            _cartBal.ApplyPromo(userId, request.PromoCode);
-
-            // Get updated cart with promo applied
-            var items = _cartBal.GetCartItems(userId);
-
-            if (items == null || !items.Any())
-                return Ok(new CartResponseDto { Message = CulinaryCartConstants.Messages.CartisEmpty });
-
-            var baseAmount = items.Sum(i => i.FinalPrice);
-            var calcResult = _cartBal.CalculateFinalAmount(baseAmount, request.PromoCode);
-
-            return Ok(new CartResponseDto
-            {
-                Items = items.Select(i => new CartItemDto
-                {
-                    FoodItemId = i.FoodItemId,
-                    FoodItemName = i.FoodItemName,
-                    Quantity = i.Quantity,
-                    FinalPrice = i.FinalPrice
-                }).ToList(),
-                BaseAmount = calcResult.BaseAmount,
-                PromoDiscount = calcResult.PromoDiscount,
-                Charges = new List<CartChargeDto>
-                {
-                    new CartChargeDto { ChargeType = "HandlingFee", Value = calcResult.HandlingFee },
-                    new CartChargeDto { ChargeType = "DeliveryFee", Value = calcResult.DeliveryFee },
-                    new CartChargeDto { ChargeType = "Tax", Value = calcResult.TaxAmount }
-                },
-                FinalAmount = calcResult.FinalAmount,
-                AppliedPromoCode = calcResult.AppliedPromoCode,
-                Message = calcResult.AppliedPromoCode != null 
-                    ? $"Promo code '{calcResult.AppliedPromoCode}' applied successfully! Discount: ₹{calcResult.PromoDiscount}" 
-                    : "Promo code is invalid or expired."
-            });
-        }
-
+        }  
     }
 }

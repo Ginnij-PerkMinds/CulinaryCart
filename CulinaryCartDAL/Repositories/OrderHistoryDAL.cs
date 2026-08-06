@@ -29,13 +29,18 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
         // Update an existing order (status, totals, etc.)
         public void Update(Order order)
         {
-            // 🔹 NEW: recalc totals whenever updating
-            CalculateOrderTotals(order);
+            if (order == null) return;
 
+            // Attach and update the entire entity
             _db.Orders.Update(order);
 
+            // Save changes to persist AppliedPromoCode, PromoDiscount, FinalAmount, etc.
             _db.SaveChanges();
+
+            // Optional: Debug log to confirm persistence
+            Console.WriteLine($"[OrderHistoryDAL.Update] OrderId={order.OrderId}, FinalAmount={order.FinalAmount}, PromoCode={order.AppliedPromoCode}, PromoDiscount={order.PromoDiscount}");
         }
+
 
         // Delete an order (removes order + items)
         public void Delete(Order order)
@@ -78,7 +83,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
                       .ToList();
         }
 
-        // 🔹 NEW: helper method to calculate totals consistently
+        // NEW: helper method to calculate totals consistently
         private void CalculateOrderTotals(Order order)
         {
             if (order == null || !order.OrderItems.Any())
