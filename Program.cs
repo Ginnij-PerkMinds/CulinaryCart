@@ -102,6 +102,7 @@ internal class Program
         builder.Services.AddScoped<UserBAL>();
         builder.Services.AddScoped<PromocodeBAL>();
         builder.Services.AddScoped<ChargeBAL>();
+        builder.Services.AddScoped<OrdersBAL>();
 
         builder.Services.AddScoped<IImageFAL, ImageFAL>();
 

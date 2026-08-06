@@ -54,6 +54,8 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
         {
             return _db.Orders
                       .Include(o => o.OrderItems)
+                      .Include(o => o.User)
+              .ThenInclude(u => u.Address)      // added on 06-08
                       .ToList();
         }
 
@@ -62,6 +64,8 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
         {
             return _db.Orders
                       .Include(o => o.OrderItems)
+                      .Include(o => o.User)
+              .ThenInclude(u => u.Address)    // added on 06-08
                       .FirstOrDefault(o => o.OrderId == orderId);
         }
 
@@ -81,6 +85,32 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
                       .Include(o => o.OrderItems)
                       .Where(o => o.Status == CulinaryCartConstants.Status.CheckedOut)
                       .ToList();
+        }
+        // NEW: Get orders by OrderStatus (Pending, Accepted, Rejected)
+        public List<Order> GetOrdersByOrderStatus(string orderStatus)
+        {
+            return _db.Orders
+                      .Include(o => o.OrderItems)
+                      .Include(o => o.User)
+                      .ThenInclude(u => u.Address)
+                      .Where(o => o.OrderStatus == orderStatus)
+                      .ToList();
+        }
+
+        // NEW: Update OrderStatus + Remarks
+        public bool UpdateOrderStatus(int orderId, string orderStatus, string? remarks)
+        {
+            var order = _db.Orders.FirstOrDefault(o => o.OrderId == orderId);
+            if (order == null) return false;
+
+            order.OrderStatus = orderStatus;
+            order.Remarks = remarks;
+
+            _db.Orders.Update(order);
+            _db.SaveChanges();
+
+            Console.WriteLine($"[OrderHistoryDAL.UpdateOrderStatus] OrderId={order.OrderId}, Status={order.OrderStatus}, Remarks={order.Remarks}");
+            return true;
         }
 
         // NEW: helper method to calculate totals consistently

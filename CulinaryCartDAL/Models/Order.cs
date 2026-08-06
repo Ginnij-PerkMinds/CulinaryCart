@@ -25,6 +25,15 @@
         public string? RazorpayOrderId { get; set; }
         public string? PaymentId { get; set; }
 
+
+        // New columns
+        public string OrderStatus { get; set; } = "Pending"; // default
+        public string? Remarks { get; set; }
+
+        // Navigation properties
+        public User User { get; set; }
+        
+
         // Items in the order
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         
