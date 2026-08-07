@@ -30,6 +30,11 @@
         public string OrderStatus { get; set; } = "Pending"; // default
         public string? Remarks { get; set; }
 
+        public string? RefundStatus { get; set; }
+        public string? RefundImage { get; set; }
+        public string? RefundUserRemarks { get; set; }
+
+
         // Navigation properties
         public User User { get; set; }
         

@@ -86,6 +86,19 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
                       .Where(o => o.Status == CulinaryCartConstants.Status.CheckedOut)
                       .ToList();
         }
+
+        // Get all completed orders (CheckedOut or Success)
+        public List<Order> GetCompletedOrdersByUser(int userId)
+        {
+            return _db.Orders
+                      .Include(o => o.OrderItems)
+                      .Where(o => o.UserId == userId &&
+                                 (o.Status == CulinaryCartConstants.Status.CheckedOut ||
+                                  o.Status == CulinaryCartConstants.Status.Success))
+                      .OrderByDescending(o => o.OrderDate)
+                      .ToList();
+        }
+
         // NEW: Get orders by OrderStatus (Pending, Accepted, Rejected)
         public List<Order> GetOrdersByOrderStatus(string orderStatus)
         {

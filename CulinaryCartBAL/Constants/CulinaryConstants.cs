@@ -6,6 +6,7 @@
         {
             public const string InCart = "InCart";
             public const string CheckedOut = "CheckedOut";
+            public const string Success = "Success";
         }
 
         public static class Messages

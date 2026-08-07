@@ -20,6 +20,7 @@ public class CulinaryCartDbContext : DbContext
     public DbSet<Promocode> Promocode { get; set; } 
     public DbSet<Charge> Charge { get; set; }
     public DbSet<Refund> Refunds { get; set; }  // added for refund management
+    
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

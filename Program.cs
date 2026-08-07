@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Annotations;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -19,6 +20,8 @@ internal class Program
     private static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
         // jwt authentication added
         builder.Services.AddAuthentication(options =>
         {
@@ -69,7 +72,32 @@ internal class Program
                 Description = "API for Managing Menu Items, Categories, Dietary Preferences, Cart Procedures and Order History in the CulinaryCart application.",
             });
 
-            
+            // 🔑 Add JWT Bearer security scheme
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Enter 'Bearer' followed by your JWT token.\nExample: Bearer eyJhbGciOiJIUzI1NiIs..."
+            });
+
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+
             c.OperationFilter<FileUploadOperationFilter>();
 
             c.SchemaFilter<DropdownSchemaFilter>();
@@ -97,6 +125,7 @@ internal class Program
         builder.Services.AddScoped<PromocodeDAL>();
         builder.Services.AddScoped<ChargeDAL>();
         builder.Services.AddScoped<RefundDAL>();
+        
 
         builder.Services.AddScoped<MenuBAL>();
         builder.Services.AddScoped<CartBAL>();
@@ -105,6 +134,7 @@ internal class Program
         builder.Services.AddScoped<ChargeBAL>();
         builder.Services.AddScoped<OrdersBAL>();
         builder.Services.AddScoped<RefundsBAL>();
+        builder.Services.AddScoped<MyOrdersBAL>();
 
         builder.Services.AddScoped<IImageFAL, ImageFAL>();
 
