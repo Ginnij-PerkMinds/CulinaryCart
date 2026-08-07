@@ -38,7 +38,13 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             _db.SaveChanges();
 
             // Optional: Debug log to confirm persistence
-            Console.WriteLine($"[OrderHistoryDAL.Update] OrderId={order.OrderId}, FinalAmount={order.FinalAmount}, PromoCode={order.AppliedPromoCode}, PromoDiscount={order.PromoDiscount}");
+            //Console.WriteLine($"[OrderHistoryDAL.Update] OrderId={order.OrderId}, FinalAmount={order.FinalAmount}, PromoCode={order.AppliedPromoCode}, PromoDiscount={order.PromoDiscount}");
+
+            Console.WriteLine($"[OrderHistoryDAL.Update] " +
+                         $"OrderId={order.OrderId}, FinalAmount={order.FinalAmount}, " +
+                         $"PromoCode={order.AppliedPromoCode}, PromoDiscount={order.PromoDiscount}, " +
+                         $"BaseAmount={order.BaseAmount}, HandlingFee={order.HandlingFee}, " +
+                         $"DeliveryFee={order.DeliveryFee}, TaxAmount={order.TaxAmount}");
         }
 
 
@@ -122,7 +128,10 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             _db.Orders.Update(order);
             _db.SaveChanges();
 
-            Console.WriteLine($"[OrderHistoryDAL.UpdateOrderStatus] OrderId={order.OrderId}, Status={order.OrderStatus}, Remarks={order.Remarks}");
+            //Console.WriteLine($"[OrderHistoryDAL.UpdateOrderStatus] OrderId={order.OrderId}, Status={order.OrderStatus}, Remarks={order.Remarks}");
+            Console.WriteLine($"[OrderHistoryDAL.UpdateOrderStatus] " +
+                              $"OrderId={order.OrderId}, Status={order.OrderStatus}, Remarks={order.Remarks}, " +
+                              $"FinalAmount={order.FinalAmount}");
             return true;
         }
 
