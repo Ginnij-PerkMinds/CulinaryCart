@@ -58,13 +58,32 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             };
         }
 
-        public bool UpdateRefundStatus(int id, string status, string? remarks)
-        {
-            if (status == "Rejected" && string.IsNullOrWhiteSpace(remarks))
-                return false;
+        //public bool UpdateRefundStatus(int id, string status, string? remarks)
+        //{
+        //    if (status == "Rejected" && string.IsNullOrWhiteSpace(remarks))
+        //        return false;
 
-            return _dal.UpdateStatus(id, status, remarks);
+        //    return _dal.UpdateStatus(id, status, remarks);
+        //}
+        public bool UpdateRefundStatus(int id, string status, string? remarks, decimal? refundAmount = null)
+        {
+            var refund = _db.Refunds.FirstOrDefault(r => r.RefundId == id);
+            if (refund == null) return false;
+
+            refund.RefundStatus = status;
+            refund.Remarks = remarks;
+
+            if (status == "Accepted")
+            {
+                refund.RefundAmount = refundAmount ?? refund.FinalAmount;
+                // use provided amount if partial refund, else full FinalAmount
+            }
+
+            _db.Refunds.Update(refund);
+            _db.SaveChanges();
+            return true;
         }
+
 
         private RefundDto MapToDto(Refund r)
         {
@@ -76,6 +95,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 Address = $"{r.User?.Address?.HouseNo}, {r.User?.Address?.City}",
                 PhoneNo = r.User?.PhoneNo,
                 FinalAmount = r.FinalAmount,
+                RefundAmount = r.RefundAmount,
                 RefundStatus = r.RefundStatus,
                 Remarks = r.Remarks,
                 RefundImage = r.RefundImage,
@@ -96,6 +116,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 OrderId = orderId,
                 UserId = userId,
                 FinalAmount = order.FinalAmount,
+                RefundAmount = 0, // start with 0 untill admin approves
                 RefundStatus = "Pending",
                 RequestDate = DateTime.UtcNow,
                 RefundUserRemarks = remarks,

@@ -7,6 +7,7 @@
         public int UserId { get; set; }
         public DateTime RequestDate { get; set; }
         public decimal FinalAmount { get; set; }
+        public decimal RefundAmount { get; set; }
         public string RefundStatus { get; set; } = "Pending";
         public string? Remarks { get; set; }
 

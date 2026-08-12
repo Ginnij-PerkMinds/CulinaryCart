@@ -9,6 +9,7 @@
         public string Address { get; set; }
         public string PhoneNo { get; set; }
         public decimal FinalAmount { get; set; }
+        public decimal RefundAmount { get; set; }
         public string RefundStatus { get; set; }
         public string? Remarks { get; set; }
         public string? RefundImage { get; set; }         
