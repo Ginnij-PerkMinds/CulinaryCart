@@ -10,6 +10,10 @@
         public string RefundStatus { get; set; } = "Pending";
         public string? Remarks { get; set; }
 
+        // NEW: user-facing fields
+        public string? RefundImage { get; set; }
+        public string? RefundUserRemarks { get; set; }
+
         // Navigation
         public Order Order { get; set; }
         public User User { get; set; }

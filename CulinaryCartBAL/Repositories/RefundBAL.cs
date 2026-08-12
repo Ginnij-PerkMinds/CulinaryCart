@@ -1,4 +1,5 @@
 ﻿using CulinaryCart.CulinaryCartBAL.Models.DTO;
+using CulinaryCart.CulinaryCartDAL.DbContext;
 using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryCartDAL.Repositories;
 
@@ -7,10 +8,12 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
     public class RefundsBAL
     {
         private readonly RefundDAL _dal;
+        private readonly CulinaryCartDbContext _db;
 
-        public RefundsBAL(RefundDAL dal)
+        public RefundsBAL(RefundDAL dal, CulinaryCartDbContext db)
         {
             _dal = dal;
+            _db = db;
         }
 
         public List<RefundDto> GetAllRefunds()
@@ -74,9 +77,48 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 PhoneNo = r.User?.PhoneNo,
                 FinalAmount = r.FinalAmount,
                 RefundStatus = r.RefundStatus,
-                Remarks = r.Remarks
+                Remarks = r.Remarks,
+                RefundImage = r.RefundImage,
+                RefundUserRemarks = r.RefundUserRemarks
             };
         }
+
+        public bool ClaimRefund(int userId, int orderId, int? itemId, string? remarks, string? proofImage)
+        {
+            var order = _db.Orders.FirstOrDefault(o => o.OrderId == orderId && o.UserId == userId);
+            if (order == null) return false;
+
+            // Eligibility check: last 60 minutes
+            if ((DateTime.UtcNow - order.OrderDate).TotalMinutes > 60) return false;
+
+            var refund = new Refund
+            {
+                OrderId = orderId,
+                UserId = userId,
+                FinalAmount = order.FinalAmount,
+                RefundStatus = "Pending",
+                RequestDate = DateTime.UtcNow,
+                RefundUserRemarks = remarks,
+                RefundImage = proofImage
+            };
+
+            _dal.Add(refund);
+
+            // Sync order table for quick status display
+            order.RefundStatus = "Pending";
+            order.RefundUserRemarks = remarks;
+            order.RefundImage = proofImage;
+            _db.Orders.Update(order);
+            _db.SaveChanges();
+
+            return true;
+        }
+
+        public List<RefundDto> GetUserRefunds(int userId)
+        {
+            return _dal.GetByUser(userId).Select(MapToDto).ToList();
+        }
+
     }
 }
 

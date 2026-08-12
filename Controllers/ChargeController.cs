@@ -59,7 +59,7 @@ namespace CulinaryCart.Controllers
             var created = _chargeBal.AddCharge(new Charge
             {
                 ChargeType = request.ChargeType,
-                Value = request.Value,   // ✅ already decimal
+                Value = request.Value,   // already decimal
                 IsActive = request.IsActive
             });
             return Ok(new { message = "Charge Saved successfully" });
@@ -77,7 +77,7 @@ namespace CulinaryCart.Controllers
             {
                 ChargeId = request.ChargeId,
                 ChargeType = request.ChargeType,
-                Value = request.Value,   // ✅ already decimal
+                Value = request.Value,   // already decimal
                 IsActive = request.IsActive
             });
 

@@ -30,10 +30,7 @@ public class TokenValidationMiddleware
             return;
         }
         
-
         // Continue down the pipeline
         await _next(context);
     }
 }
-
-

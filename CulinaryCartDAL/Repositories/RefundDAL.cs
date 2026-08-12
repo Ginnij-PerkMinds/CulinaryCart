@@ -13,6 +13,12 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             _db = db;
         }
 
+        public void Add(Refund refund)
+        {
+            _db.Refunds.Add(refund);
+            _db.SaveChanges();
+        }
+
         public List<Refund> GetAll()
         {
             return _db.Refunds
@@ -40,6 +46,17 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
                       .ThenInclude(u => u.Address)
                       .FirstOrDefault(r => r.RefundId == id);
         }
+        public List<Refund> GetByUser(int userId)
+        {
+            return _db.Refunds
+                      .Include(r => r.Order)
+                      .ThenInclude(o => o.OrderItems)
+                      .Include(r => r.User)
+                      .ThenInclude(u => u.Address)
+                      .Where(r => r.UserId == userId)
+                      .OrderByDescending(r => r.RequestDate)
+                      .ToList();
+        }
 
         public bool UpdateStatus(int id, string status, string? remarks)
         {
@@ -53,6 +70,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             _db.SaveChanges();
             return true;
         }
+       
     }
 }
 

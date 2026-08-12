@@ -55,11 +55,6 @@ public class MyOrdersBAL
         RefundStatus = o.RefundStatus,
         RefundImage = o.RefundImage,
         RefundUserRemarks = o.RefundUserRemarks,
-        //BaseAmount = o.BaseAmount,
-        //PromoDiscount = o.PromoDiscount,
-        //HandlingFee = o.HandlingFee,
-        //DeliveryFee = o.DeliveryFee,
-        //TaxAmount = o.TaxAmount,
         OrderItems = o.OrderItems.Select(i => new MyOrderItemDto
         {
             FoodItemId = i.FoodItemId,

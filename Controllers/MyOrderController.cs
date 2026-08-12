@@ -17,7 +17,6 @@ public class MyOrdersController : ControllerBase
         _orderHistoryDal = orderHistoryDal;
 
     }
-
     private int GetUserIdFromToken()
     {
         var userIdClaim = User.FindFirst("UserId");
@@ -69,6 +68,22 @@ public class MyOrdersController : ControllerBase
             o.FinalAmount,
             o.AppliedPromoCode
         }));
+    }
+
+    [HttpGet("recent")]
+    public IActionResult GetRecentOrders()
+    {
+        var userId = GetUserIdFromToken();
+        var cutoff = DateTime.UtcNow.AddMinutes(-60);
+
+        var orders = _bal.GetUserOrders(userId)
+                         .Where(o => o.OrderDate >= cutoff)
+                         .ToList();
+
+        if (!orders.Any())
+            return Ok(new { Message = "No recent orders found within 60 minutes." });
+
+        return Ok(orders);
     }
 
 }

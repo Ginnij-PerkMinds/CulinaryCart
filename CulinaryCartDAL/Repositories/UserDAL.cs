@@ -37,8 +37,8 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             var existingUser = _context.Users.Include(u => u.Address).FirstOrDefault(u => u.UserId == user.UserId);
             if (existingUser == null) return false;
 
-            existingUser.IsActive = user.IsActive;
-            existingUser.IsAdmin = user.IsAdmin;
+            //existingUser.IsActive = user.IsActive;
+            //existingUser.IsAdmin = user.IsAdmin;
 
             existingUser.Name = user.Name ?? existingUser.Name;
             existingUser.EmailId = user.EmailId ?? existingUser.EmailId;
@@ -59,6 +59,19 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             }
 
             existingUser.UpdatedAt = DateTimeOffset.Now;
+            _context.SaveChanges();
+            return true;
+        }
+
+        public bool UpdateUserFlags(int id, bool isActive, bool isAdmin)
+        {
+            var existingUser = _context.Users.FirstOrDefault(u => u.UserId == id);
+            if (existingUser == null) return false;
+
+            existingUser.IsActive = isActive;
+            existingUser.IsAdmin = isAdmin;
+            existingUser.UpdatedAt = DateTimeOffset.Now;
+
             _context.SaveChanges();
             return true;
         }

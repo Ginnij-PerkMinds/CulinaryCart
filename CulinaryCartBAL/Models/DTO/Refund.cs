@@ -11,6 +11,8 @@
         public decimal FinalAmount { get; set; }
         public string RefundStatus { get; set; }
         public string? Remarks { get; set; }
+        public string? RefundImage { get; set; }         
+        public string? RefundUserRemarks { get; set; }
     }
 
     // Detailed refund info
@@ -23,5 +25,13 @@
         public decimal DeliveryFee { get; set; }
         public decimal TaxAmount { get; set; }
         public List<OrderItemDto> OrderItems { get; set; } = new();
+    }
+
+    public class RefundClaimDto
+    {
+        public int OrderId { get; set; }
+        public int? ItemId { get; set; } // null if "all items"
+        public string? Remarks { get; set; }
+        public IFormFile? ProofFile { get; set; }
     }
 }

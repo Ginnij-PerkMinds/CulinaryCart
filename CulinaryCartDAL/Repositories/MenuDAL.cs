@@ -139,6 +139,5 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
 
             return query.Count();
         }
-
     }
 }

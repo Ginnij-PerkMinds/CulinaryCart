@@ -19,7 +19,7 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
         // Add a new order with items
         public void Add(Order order)
         {
-            // 🔹 NEW: ensure breakdown fields are calculated before saving
+            //  NEW: ensure breakdown fields are calculated before saving
             CalculateOrderTotals(order);
 
             _db.Orders.Add(order);
@@ -177,7 +177,5 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
                       .Include(o => o.OrderItems)
                       .FirstOrDefault(o => o.RazorpayOrderId == razorpayOrderId);
         }
-
     }
 }
-

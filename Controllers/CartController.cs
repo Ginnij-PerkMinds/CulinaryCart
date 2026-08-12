@@ -211,42 +211,6 @@ namespace CulinaryCart.Controllers
             return Ok(orders);
         }
 
-        // My orders
-        //[HttpGet("my-orders")]
-        //public IActionResult GetMyOrders()
-        //{
-        //    int userId = GetUserIdFromToken();
-        //    var indiaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
-
-        //    var orders = _orderHistoryDal.GetByUser(userId)
-        //        .Where(o => o.Status == CulinaryCartConstants.Status.CheckedOut)
-        //        .OrderByDescending(o => o.OrderDate)
-        //        .Select(o => new
-        //        {
-        //            o.OrderId,
-        //            OrderDate = TimeZoneInfo.ConvertTimeFromUtc(o.OrderDate, indiaTimeZone),
-        //            o.BaseAmount,
-        //            o.PromoDiscount,
-        //            o.HandlingFee,
-        //            o.DeliveryFee,
-        //            o.TaxAmount,
-        //            o.FinalAmount,
-        //            o.AppliedPromoCode,
-        //            Items = o.OrderItems.Select(i => new
-        //            {
-        //                i.FoodItemName,
-        //                i.Quantity,
-        //                i.FinalPrice
-        //            })
-        //        })
-        //        .ToList();
-
-        //    if (!orders.Any())
-        //        return Ok(new { Message = "No past orders found." });
-
-        //    return Ok(orders);
-        //}
-
         // Order stats
         [HttpGet("order-stats")]
         public IActionResult GetOrderStats()

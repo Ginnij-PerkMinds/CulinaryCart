@@ -291,6 +291,8 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 _orderHistoryDal.Update(order);
             }
         }
+
+        //Checkout method to finalize the order 
         public Order Checkout(int userId)
         {
             var order = _orderHistoryDal.GetByUser(userId)
