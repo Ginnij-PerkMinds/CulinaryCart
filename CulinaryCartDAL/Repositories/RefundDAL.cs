@@ -73,4 +73,3 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
        
     }
 }
-

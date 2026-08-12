@@ -54,19 +54,6 @@ namespace CulinaryCart.Controllers
             return BadRequest(new { success = false, message = "Failed to reject refund. Remarks required." });
         }
 
-        //[HttpPost("claim")]
-        //[Authorize] // user must be logged in
-        //public IActionResult ClaimRefund([FromForm] RefundClaimDto dto)
-        //{
-        //    var userIdClaim = User.FindFirst("UserId");
-        //    if (userIdClaim == null) return Unauthorized(new { Message = "UserId claim not found in token" });
-        //    int userId = int.Parse(userIdClaim.Value);
-
-        //    var success = _bal.ClaimRefund(userId, dto.OrderId, dto.ItemId, dto.Remarks, dto.ProofFile?.FileName);
-        //    if (!success) return BadRequest(new { Message = "Refund not eligible or invalid order." });
-
-        //    return Ok(new { success = true, message = "Refund request submitted." });
-        //}
         [HttpPost("claim")]
         [Authorize]
         public IActionResult ClaimRefund([FromForm] RefundClaimDto dto)
