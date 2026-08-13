@@ -11,6 +11,7 @@
         public string? RefundStatus { get; set; }
         public string? RefundImage { get; set; }
         public string? RefundUserRemarks { get; set; }
+        public List<MyOrderItemDto> OrderItems { get; set; } = new();
     }
 
     public class MyOrderDetailsDto : MyOrderDto

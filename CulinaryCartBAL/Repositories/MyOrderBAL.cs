@@ -36,8 +36,15 @@ public class MyOrdersBAL
         Remarks = o.Remarks,
         RefundStatus = o.RefundStatus,
         RefundImage = o.RefundImage,
-        RefundUserRemarks = o.RefundUserRemarks
-    };
+        RefundUserRemarks = o.RefundUserRemarks,
+        OrderItems = o.OrderItems.Select(i => new MyOrderItemDto
+        {
+            FoodItemId = i.FoodItemId,
+            FoodItemName = i.FoodItemName,
+            Quantity = i.Quantity,
+            FinalPrice = i.FinalPrice
+        }).ToList()
+};
 
     private MyOrderDetailsDto MapToDetailsDto(Order o) => new MyOrderDetailsDto
     {
