@@ -70,11 +70,17 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             if (status == "Accepted")
             {
                 refund.RefundAmount = refund.RefundAmount;
-                // use provided amount if partial refund, else full FinalAmount
+                
+                var order = _db.Orders.FirstOrDefault(o => o.OrderId == refund.OrderId);
+                if (order != null)
+                {
+                    order.OrderStatus = "Refunded";
+                    _db.Orders.Update(order);
+                }
             }
             else if (status == "Rejected")
             {
-                refund.RefundAmount = 0;   // ✅ reset to 0
+                refund.RefundAmount = 0;   // reset to 0
             }
 
             _db.Refunds.Update(refund);

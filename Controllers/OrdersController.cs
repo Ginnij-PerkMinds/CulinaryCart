@@ -40,6 +40,28 @@ namespace CulinaryCart.Controllers
             return Ok(_bal.GetOrdersByStatus("Rejected"));
         }
 
+        [HttpGet("delivered")]
+        public IActionResult GetDeliveredOrders()
+        {
+            return Ok(_bal.GetOrdersByStatus("Delivered"));
+        }
+
+        [HttpGet("refunded")]
+        public IActionResult GetRefundedOrders()
+        {
+            return Ok(_bal.GetOrdersByStatus("Refunded"));
+        }
+
+        [HttpPost("{id}/delivered")]
+        public IActionResult DeliverOrder(int id, [FromBody] string? remarks)
+        {
+            if (_bal.UpdateOrderStatus(id, "Delivered", remarks))
+                return Ok(new { success = true, message = "Order marked as delivered." });
+
+            return BadRequest(new { success = false, message = "Failed to mark order as delivered." });
+        }
+
+
         // Get order details by ID
         [HttpGet("details/{id}")]
         public IActionResult GetOrderDetails(int id)
