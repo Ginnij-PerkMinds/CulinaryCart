@@ -1,4 +1,5 @@
-﻿using CulinaryCart.CulinaryCartDAL.Models;
+﻿using CulinaryCart.CulinaryCartBAL.Repositories;
+using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryCartDAL.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,12 +11,13 @@ public class MyOrdersController : ControllerBase
 {
     private readonly MyOrdersBAL _bal;
     private readonly OrderHistoryDAL _orderHistoryDal;
+    private readonly OrdersBAL _orders;
 
-    public MyOrdersController(MyOrdersBAL bal, OrderHistoryDAL orderHistoryDal)
+    public MyOrdersController(MyOrdersBAL bal, OrderHistoryDAL orderHistoryDal, OrdersBAL orders)
     {
         _bal = bal;
         _orderHistoryDal = orderHistoryDal;
-
+        _orders = orders;
     }
     private int GetUserIdFromToken()
     {
@@ -82,6 +84,19 @@ public class MyOrdersController : ControllerBase
 
         if (!orders.Any())
             return Ok(new { Message = "No recent orders found within 60 minutes." });
+
+        return Ok(orders);
+    }
+
+    [HttpGet("delivered/eligible")]
+    public IActionResult GetDeliveredEligibleOrders()
+    {
+        var userId = GetUserIdFromToken();
+        var cutoff = DateTime.Now.AddMinutes(-60);
+
+        var orders = _orders.GetOrdersByStatus("Delivered")
+                         .Where(o => o.OrderDate <= cutoff)
+                         .ToList();
 
         return Ok(orders);
     }

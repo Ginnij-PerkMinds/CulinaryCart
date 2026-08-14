@@ -61,7 +61,6 @@ namespace CulinaryCart.Controllers
             return BadRequest(new { success = false, message = "Failed to mark order as delivered." });
         }
 
-
         // Get order details by ID
         [HttpGet("details/{id}")]
         public IActionResult GetOrderDetails(int id)
