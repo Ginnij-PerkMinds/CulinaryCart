@@ -37,18 +37,18 @@ namespace CulinaryCart.Controllers
         }
 
         [HttpPost("{id}/accept")]
-        public IActionResult AcceptRefund(int id, [FromBody] string? remarks)
+        public IActionResult AcceptRefund(int id, [FromBody] AcceptRefundDto dto)
         {
-            if (_bal.UpdateRefundStatus(id, "Accepted", remarks))
+            if (_bal.UpdateRefundStatus(id, "Accepted", dto.Remarks, dto.RefundAmount))
                 return Ok(new { success = true, message = "Refund accepted successfully" });
 
             return BadRequest(new { success = false, message = "Failed to accept refund" });
         }
 
         [HttpPost("{id}/reject")]
-        public IActionResult RejectRefund(int id, [FromBody] string remarks)
+        public IActionResult RejectRefund(int id, [FromBody] RejectRefundDto dto)
         {
-            if (_bal.UpdateRefundStatus(id, "Rejected", remarks))
+            if (_bal.UpdateRefundStatus(id, "Rejected", dto.Remarks, dto.RefundAmount))
                 return Ok(new { success = true, message = "Refund rejected successfully" });
 
             return BadRequest(new { success = false, message = "Failed to reject refund. Remarks required." });
@@ -78,8 +78,20 @@ namespace CulinaryCart.Controllers
                 savedFilePath = $"/refunds/{fileName}";
             }
 
-            var success = _bal.ClaimRefund(userId, dto.OrderId, dto.ItemId, dto.Remarks, savedFilePath);
-            if (!success) return BadRequest(new { Message = "Refund not eligible or invalid order." });
+            //var success = _bal.ClaimRefund(userId, dto.OrderId, dto.ItemId, dto.Remarks, savedFilePath);
+            var success = _bal.ClaimRefund(
+                          userId,
+                          dto.OrderId,
+                          dto.ItemId,
+                          dto.Remarks,
+                          savedFilePath,
+                          dto.RefundAmount
+                          );
+
+            if (!success) 
+               { 
+               return BadRequest(new { Message = "Refund already claimed for this order or not eligible." }); 
+               }
 
             return Ok(new { success = true, message = "Refund request submitted." });
         }

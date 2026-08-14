@@ -70,6 +70,12 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             _db.SaveChanges();
             return true;
         }
-       
+
+        public bool HasRefundForOrder(int orderId)
+        {
+            return _db.Refunds.Any(r => r.OrderId == orderId);
+        }
+
+
     }
 }

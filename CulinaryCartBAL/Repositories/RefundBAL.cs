@@ -39,6 +39,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 Address = $"{refund.User?.Address?.HouseNo}, {refund.User?.Address?.City}",
                 PhoneNo = refund.User?.PhoneNo,
                 FinalAmount = refund.FinalAmount,
+                RefundAmount = refund.RefundAmount,
                 RefundStatus = refund.RefundStatus,
                 Remarks = refund.Remarks,
                 OrderId = refund.OrderId,
@@ -58,13 +59,6 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             };
         }
 
-        //public bool UpdateRefundStatus(int id, string status, string? remarks)
-        //{
-        //    if (status == "Rejected" && string.IsNullOrWhiteSpace(remarks))
-        //        return false;
-
-        //    return _dal.UpdateStatus(id, status, remarks);
-        //}
         public bool UpdateRefundStatus(int id, string status, string? remarks, decimal? refundAmount = null)
         {
             var refund = _db.Refunds.FirstOrDefault(r => r.RefundId == id);
@@ -75,8 +69,12 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
 
             if (status == "Accepted")
             {
-                refund.RefundAmount = refundAmount ?? refund.FinalAmount;
+                refund.RefundAmount = refund.RefundAmount;
                 // use provided amount if partial refund, else full FinalAmount
+            }
+            else if (status == "Rejected")
+            {
+                refund.RefundAmount = 0;   // ✅ reset to 0
             }
 
             _db.Refunds.Update(refund);
@@ -103,10 +101,19 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             };
         }
 
-        public bool ClaimRefund(int userId, int orderId, int? itemId, string? remarks, string? proofImage)
+        public bool ClaimRefund(int userId, int orderId, int? itemId, string? remarks, string? proofImage, decimal refundAmount)
         {
+
             var order = _db.Orders.FirstOrDefault(o => o.OrderId == orderId && o.UserId == userId);
             if (order == null) return false;
+
+            // ✅ Prevent duplicate refund claims
+            var existingRefund = _db.Refunds.FirstOrDefault(r => r.OrderId == orderId && r.UserId == userId);
+            if (existingRefund != null)
+            {
+                // Already claimed
+                return false; // or throw a custom exception / return a message
+            }
 
             // Eligibility check: last 60 minutes
             if ((DateTime.UtcNow - order.OrderDate).TotalMinutes > 60) return false;
@@ -116,7 +123,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 OrderId = orderId,
                 UserId = userId,
                 FinalAmount = order.FinalAmount,
-                RefundAmount = 0, // start with 0 untill admin approves
+                RefundAmount = refundAmount, 
                 RefundStatus = "Pending",
                 RequestDate = DateTime.UtcNow,
                 RefundUserRemarks = remarks,

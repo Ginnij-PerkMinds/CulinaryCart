@@ -34,5 +34,18 @@
         public int? ItemId { get; set; } // null if "all items"
         public string? Remarks { get; set; }
         public IFormFile? ProofFile { get; set; }
+        public decimal RefundAmount { get; set; }
+    }
+
+    public class RejectRefundDto
+    {
+        public string Remarks { get; set; } = string.Empty;
+        public decimal RefundAmount { get; set; } = 0;
+    }
+
+    public class   AcceptRefundDto
+    {
+        public string Remarks { get; set; } = string.Empty;
+        public decimal RefundAmount { get; set; }
     }
 }
