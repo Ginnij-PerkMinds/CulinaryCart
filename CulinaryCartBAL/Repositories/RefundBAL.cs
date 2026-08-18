@@ -55,9 +55,20 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                     FoodItemName = oi.FoodItemName,   // assumes you have Item navigation property
                     Quantity = oi.Quantity,
                     FinalPrice = oi.FinalPrice
+                }).ToList(),
+
+                // ✅ New: include refund items
+                RefundItems = refund.RefundItems.Select(ri => new RefundItemDto
+                {
+                    RefundItemId = ri.RefundItemId,
+                    FoodItemId = ri.FoodItemID,
+                    FoodItemName = ri.Menu.FoodItemName,
+                    RefundImage = ri.RefundImage,
+                    Remarks = ri.Remarks
                 }).ToList()
             };
         }
+        
 
         public bool UpdateRefundStatus(int id, string status, string? remarks, decimal? refundAmount = null)
         {
@@ -106,47 +117,103 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
                 RefundUserRemarks = r.RefundUserRemarks
             };
         }
-
-        public bool ClaimRefund(int userId, int orderId, int? itemId, string? remarks, string? proofImage, decimal refundAmount)
+        public bool ClaimRefund(int userId, int orderId, List<RefundItemRequestDto>? items, decimal refundAmount)
         {
-
             var order = _db.Orders.FirstOrDefault(o => o.OrderId == orderId && o.UserId == userId);
             if (order == null) return false;
 
-            // ✅ Prevent duplicate refund claims
             var existingRefund = _db.Refunds.FirstOrDefault(r => r.OrderId == orderId && r.UserId == userId);
-            if (existingRefund != null)
-            {
-                // Already claimed
-                return false; // or throw a custom exception / return a message
-            }
+            if (existingRefund != null) return false;
 
-            // Eligibility check: last 60 minutes
-            if ((DateTime.UtcNow - order.OrderDate).TotalMinutes > 60) return false;
+            if ((DateTime.UtcNow - order.OrderDate).TotalMinutes < 120) return false;
 
             var refund = new Refund
             {
                 OrderId = orderId,
                 UserId = userId,
                 FinalAmount = order.FinalAmount,
-                RefundAmount = refundAmount, 
+                RefundAmount = refundAmount,
                 RefundStatus = "Pending",
                 RequestDate = DateTime.UtcNow,
-                RefundUserRemarks = remarks,
-                RefundImage = proofImage
+                RefundItems = new List<RefundItem>()
             };
+
+            if (items != null && items.Any())
+            {
+                foreach (var item in items)
+                {
+                    refund.RefundItems.Add(new RefundItem
+                    {
+                        FoodItemID = item.FoodItemId,   // ✅ correct property
+                        RefundImage = item.ProofImage,  // ✅ string path
+                        Remarks = item.Remarks          // ✅ correct casing
+                    });
+                }
+            }
 
             _dal.Add(refund);
 
-            // Sync order table for quick status display
             order.RefundStatus = "Pending";
-            order.RefundUserRemarks = remarks;
-            order.RefundImage = proofImage;
             _db.Orders.Update(order);
             _db.SaveChanges();
 
             return true;
         }
+
+        //public bool ClaimRefund(int userId, int orderId, List<RefundItemRequestDto>? items, decimal refundAmount)
+        //{
+
+        //    var order = _db.Orders.FirstOrDefault(o => o.OrderId == orderId && o.UserId == userId);
+        //    if (order == null) return false;
+
+        //    // Prevent duplicate refund claims
+        //    var existingRefund = _db.Refunds.FirstOrDefault(r => r.OrderId == orderId && r.UserId == userId);
+        //    if (existingRefund != null)
+        //    {
+        //        // Already claimed
+        //        return false; // or throw a custom exception / return a message
+        //    }
+
+        //    // Eligibility check: last 120 minutes
+        //    if ((DateTime.UtcNow - order.OrderDate).TotalMinutes < 120) return false;
+
+        //    var refund = new Refund
+        //    {
+        //        OrderId = orderId,
+        //        UserId = userId,
+        //        FinalAmount = order.FinalAmount,
+        //        RefundAmount = refundAmount,
+        //        RefundStatus = "Pending",
+        //        RequestDate = DateTime.UtcNow,
+        //        //RefundUserRemarks = remarks,
+        //        //RefundImage = proofImage,
+        //        RefundItems = new List<RefundItem>()
+        //    };
+        //        if (items != null && items.Any())
+        //        {
+        //        foreach (var itemId in items)
+        //        {
+        //            refund.RefundItems.Add(new RefundItem
+        //            {
+        //                FoodItemID = item.FoodItemID,
+        //                RefundImage = item.ProofImage,
+        //                Remarks = item.remarks
+        //            });
+        //        }
+        //        }
+
+
+        //    _dal.Add(refund);
+
+        //    // Sync order table for quick status display
+        //    order.RefundStatus = "Pending";
+        //    //order.RefundUserRemarks = remarks;
+        //    //order.RefundImage = proofImage;
+        //    _db.Orders.Update(order);
+        //    _db.SaveChanges();
+
+        //    return true;
+        //}
 
         public List<RefundDto> GetUserRefunds(int userId)
         {

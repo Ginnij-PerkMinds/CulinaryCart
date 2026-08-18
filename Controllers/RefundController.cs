@@ -2,6 +2,11 @@
 using CulinaryCart.CulinaryCartBAL.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+
 
 namespace CulinaryCart.Controllers
 {
@@ -54,47 +59,98 @@ namespace CulinaryCart.Controllers
             return BadRequest(new { success = false, message = "Failed to reject refund. Remarks required." });
         }
 
+        //[HttpPost("claim")]
+        //[Authorize]
+        //public IActionResult ClaimRefund([FromForm] RefundClaimDto dto)
+        //{
+        //    var userIdClaim = User.FindFirst("UserId");
+        //    if (userIdClaim == null) return Unauthorized(new { Message = "UserId claim not found in token" });
+        //    int userId = int.Parse(userIdClaim.Value);
+
+        //    string? savedFilePath = null;
+        //    if (dto.ProofFile != null && dto.ProofFile.Length > 0)
+        //    {
+        //        var uploadsFolder = Path.Combine("wwwroot", "refunds");
+        //        Directory.CreateDirectory(uploadsFolder);
+
+        //        var safeFileName = Path.GetFileName(dto.ProofFile.FileName);
+
+        //        var fileName = $"{Guid.NewGuid()}_{dto.ProofFile.FileName}";
+        //        var filePath = Path.Combine(uploadsFolder, fileName);
+
+        //        using (var stream = new FileStream(filePath, FileMode.Create))
+        //        {
+        //            dto.ProofFile.CopyTo(stream);
+        //        }
+
+        //        savedFilePath = $"/refunds/{fileName}";
+        //    }
+
+        //    var itemIds = Request.Form["ItemIds"].Select(int.Parse).ToList();
+        //    Console.WriteLine($"[RefundsController.ClaimRefund] " +
+        //          $"OrderId={dto.OrderId}, RefundAmount={dto.RefundAmount}, " +
+        //          $"ItemIds={string.Join(",", itemIds)}");
+
+
+        //    //var success = _bal.ClaimRefund(userId, dto.OrderId, dto.ItemId, dto.Remarks, savedFilePath);
+        //    var success = _bal.ClaimRefund(
+        //                  userId,
+        //                  dto.OrderId,
+        //                  itemIds,
+        //                  dto.Remarks,
+        //                  savedFilePath,
+        //                  dto.RefundAmount
+        //                  );
+
+        //    if (!success) 
+        //       { 
+        //       return BadRequest(new { Message = "Refund already claimed for this order or not eligible." }); 
+        //       }
+
+        //    return Ok(new { success = true, message = "Refund request submitted." });
+        //}
         [HttpPost("claim")]
         [Authorize]
-        public IActionResult ClaimRefund([FromForm] RefundClaimDto dto)
+        public async Task<IActionResult> ClaimRefund([FromForm] int orderId,
+                                             [FromForm] decimal refundAmount,
+                                             [FromForm] List<IFormFile> proofFiles,
+                                             [FromForm] string itemsJson)
         {
             var userIdClaim = User.FindFirst("UserId");
             if (userIdClaim == null) return Unauthorized(new { Message = "UserId claim not found in token" });
             int userId = int.Parse(userIdClaim.Value);
 
-            string? savedFilePath = null;
-            if (dto.ProofFile != null && dto.ProofFile.Length > 0)
+            // Deserialize items JSON (sent from Angular)
+            //var items = JsonConvert.DeserializeObject<List<RefundItemRequestDto>>(itemsJson);
+            var items = JsonSerializer.Deserialize<List<RefundItemRequestDto>>(itemsJson,
+                        new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+
+            // Save each proof file and update path
+            foreach (var file in proofFiles)
             {
                 var uploadsFolder = Path.Combine("wwwroot", "refunds");
                 Directory.CreateDirectory(uploadsFolder);
-                var fileName = $"{Guid.NewGuid()}_{dto.ProofFile.FileName}";
+
+                var fileName = $"{Guid.NewGuid()}_{file.FileName}";
                 var filePath = Path.Combine(uploadsFolder, fileName);
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    dto.ProofFile.CopyTo(stream);
+                    await file.CopyToAsync(stream);
                 }
 
-                savedFilePath = $"/refunds/{fileName}";
+                var item = items.FirstOrDefault(i => file.FileName.Contains(i.FoodItemId.ToString()));
+                if (item != null)
+                    item.ProofImage = $"/refunds/{fileName}";
             }
 
-            //var success = _bal.ClaimRefund(userId, dto.OrderId, dto.ItemId, dto.Remarks, savedFilePath);
-            var success = _bal.ClaimRefund(
-                          userId,
-                          dto.OrderId,
-                          dto.ItemId,
-                          dto.Remarks,
-                          savedFilePath,
-                          dto.RefundAmount
-                          );
-
-            if (!success) 
-               { 
-               return BadRequest(new { Message = "Refund already claimed for this order or not eligible." }); 
-               }
+            var success = _bal.ClaimRefund(userId, orderId, items, refundAmount);
+            if (!success) return BadRequest(new { Message = "Refund already claimed or not eligible." });
 
             return Ok(new { success = true, message = "Refund request submitted." });
         }
+
 
 
         [HttpGet("my-refunds")]

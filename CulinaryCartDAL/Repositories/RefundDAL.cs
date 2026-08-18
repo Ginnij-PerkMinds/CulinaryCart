@@ -42,6 +42,8 @@ namespace CulinaryCart.CulinaryCartDAL.Repositories
             return _db.Refunds
                       .Include(r => r.Order)
                       .ThenInclude(o => o.OrderItems)        // load order items
+                      .Include(r => r.RefundItems)   // ✅ include refund items
+                      .ThenInclude(ri => ri.Menu)    // load food item details
                       .Include(r => r.User)
                       .ThenInclude(u => u.Address)
                       .FirstOrDefault(r => r.RefundId == id);

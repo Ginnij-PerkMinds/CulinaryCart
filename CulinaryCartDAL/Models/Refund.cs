@@ -18,6 +18,21 @@
         // Navigation
         public Order Order { get; set; }
         public User User { get; set; }
+
+        public ICollection<RefundItem> RefundItems { get; set; } = new List<RefundItem>();
+    }
+
+    public class RefundItem
+    {
+        public int RefundItemId { get; set; }
+        public int RefundId { get; set; }
+        public int FoodItemID { get; set; }
+        public string? RefundImage { get; set; }
+        public string? Remarks { get; set; }
+
+        // Navigation properties
+        public Refund Refund { get; set; }
+        public Menu Menu { get; set; }
     }
 }
 

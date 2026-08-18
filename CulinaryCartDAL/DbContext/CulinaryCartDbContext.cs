@@ -20,7 +20,9 @@ public class CulinaryCartDbContext : DbContext
     public DbSet<Promocode> Promocode { get; set; } 
     public DbSet<Charge> Charge { get; set; }
     public DbSet<Refund> Refunds { get; set; }  // added for refund management
-    
+    public DbSet<RefundItem> RefundItems { get; set; }
+
+
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -103,5 +105,16 @@ public class CulinaryCartDbContext : DbContext
             .HasOne(r => r.User)
             .WithMany()
             .HasForeignKey(r => r.UserId);
+
+        modelBuilder.Entity<Refund>()
+            .HasMany(r => r.RefundItems)
+            .WithOne(ri => ri.Refund)
+            .HasForeignKey(ri => ri.RefundId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RefundItem>()
+            .HasOne(ri => ri.Menu)
+            .WithMany() // if you don’t want a collection of RefundItems inside Menu
+            .HasForeignKey(ri => ri.FoodItemID);
     }
-    }
+}

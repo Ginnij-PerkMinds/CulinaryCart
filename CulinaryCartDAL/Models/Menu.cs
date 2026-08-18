@@ -20,5 +20,7 @@ namespace CulinaryCart.CulinaryCartDAL.Models
         public int RemainingQuantity { get; set; } = 0;
 
         public bool InStock { get; set; } = true;
+
+
     }
 }

@@ -92,7 +92,7 @@ public class MyOrdersController : ControllerBase
     public IActionResult GetDeliveredEligibleOrders()
     {
         var userId = GetUserIdFromToken();
-        var cutoff = DateTime.Now.AddMinutes(-60);
+        var cutoff = DateTime.Now.AddMinutes(-120);
 
         var orders = _orders.GetOrdersByStatus("Delivered")
                          .Where(o => o.OrderDate <= cutoff)
