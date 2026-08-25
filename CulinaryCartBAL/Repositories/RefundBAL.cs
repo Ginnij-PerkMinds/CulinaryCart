@@ -125,7 +125,7 @@ namespace CulinaryCart.CulinaryCartBAL.Repositories
             var existingRefund = _db.Refunds.FirstOrDefault(r => r.OrderId == orderId && r.UserId == userId);
             if (existingRefund != null) return false;
 
-            if ((DateTime.UtcNow - order.OrderDate).TotalMinutes < 120) return false;
+            if ((DateTime.UtcNow - order.OrderDate).TotalMinutes > 120) return false;
 
             var refund = new Refund
             {

@@ -21,6 +21,8 @@ public class CulinaryCartDbContext : DbContext
     public DbSet<Charge> Charge { get; set; }
     public DbSet<Refund> Refunds { get; set; }  // added for refund management
     public DbSet<RefundItem> RefundItems { get; set; }
+    public DbSet<OtpEntry> OtpStore { get; set; }
+
 
 
 

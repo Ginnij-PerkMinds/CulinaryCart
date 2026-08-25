@@ -1,11 +1,13 @@
 using CulinaryCart.CulinaryCartBAL.Models.DTO;
 using CulinaryCart.CulinaryCartBAL.Repositories;
 using CulinaryCart.CulinaryCartDAL.DbContext;
+using CulinaryCart.CulinaryCartDAL.Models;
 using CulinaryCart.CulinaryCartDAL.Repositories;
 using CulinaryCart.CulinaryFAL;
 using CulinaryCart.Filters;
 using CulinaryCart.Middleware;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -125,6 +127,7 @@ internal class Program
         builder.Services.AddScoped<PromocodeDAL>();
         builder.Services.AddScoped<ChargeDAL>();
         builder.Services.AddScoped<RefundDAL>();
+        builder.Services.AddScoped<OtpDAL>();
         
 
         builder.Services.AddScoped<MenuBAL>();
@@ -135,8 +138,13 @@ internal class Program
         builder.Services.AddScoped<OrdersBAL>();
         builder.Services.AddScoped<RefundsBAL>();
         builder.Services.AddScoped<MyOrdersBAL>();
+        builder.Services.AddScoped<OtpBAL>();
 
         builder.Services.AddScoped<IImageFAL, ImageFAL>();
+
+        builder.Services.AddScoped<EmailService>();
+
+        builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 
         var app = builder.Build();

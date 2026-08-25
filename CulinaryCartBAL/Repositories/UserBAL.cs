@@ -208,6 +208,25 @@ public class UserBAL
         return _userDal.UpdateUser(user) ? CulinaryCartConstants.Messages.PasswordUpdateSuccessful : CulinaryCartConstants.Messages.PasswordUpdateFailed;
     }
 
+    public string ResetPassword(string emailId, string newPassword)
+    {
+        var user = _userDal.GetByEmail(emailId);
+        if (user == null) return CulinaryCartConstants.Messages.UserNotFound;
+
+        if (!IsValidPassword(newPassword))
+            return CulinaryCartConstants.Messages.PasswordRequirements;
+
+        user.PasswordHash = HashPassword(newPassword);
+
+        var istZone = TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+        user.UpdatedAt = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, istZone);
+
+        return _userDal.UpdateUser(user)
+            ? CulinaryCartConstants.Messages.PasswordUpdateSuccessful
+            : CulinaryCartConstants.Messages.PasswordUpdateFailed;
+    }
+
+
     public string DeleteUser(int id)
     {
         var user = _userDal.GetById(id);
