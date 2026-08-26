@@ -1,4 +1,5 @@
-﻿using CulinaryCart.CulinaryCartBAL.Repositories;
+﻿using CulinaryCart.CulinaryCartBAL.Models.DTO;
+using CulinaryCart.CulinaryCartBAL.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CulinaryCart.Controllers
@@ -82,13 +83,14 @@ namespace CulinaryCart.Controllers
 
         // Reject order
         [HttpPost("{id}/reject")]
-        public IActionResult RejectOrder(int id, [FromBody] string remarks)
+        public IActionResult RejectOrder(int id, [FromBody] RejectRequest request)
         {
-            if (_bal.UpdateOrderStatus(id, "Rejected", remarks))
+            if (_bal.UpdateOrderStatus(id, "Rejected", request.Remarks))
                 return Ok(new { success = true, message = "Order rejected successfully" });
 
             return BadRequest(new { success = false, message = "Failed to reject order. Remarks required." });
         }
+
     }
 }
 

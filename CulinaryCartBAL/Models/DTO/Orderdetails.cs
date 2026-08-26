@@ -34,6 +34,12 @@
         public int Quantity { get; set; }
         public decimal FinalPrice { get; set; }
     }
+
+    public class RejectRequest
+    {
+        public string Remarks { get; set; }
+    }
+
 }
 
 
